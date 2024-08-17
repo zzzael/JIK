@@ -161,7 +161,7 @@
 </head>
 <body>
     <div class="player-container">
-        <img src="LIST.png" alt="Album Cover" class="album-cover">
+        <img src="LIST.png" alt="Album Cover" class="album-cover" id="album-cover">
 
         <div class="track-info">
             <div class="track-name" id="current-track-name">JESUS IS LORD</div>
@@ -217,7 +217,6 @@
                 </div>
                 <div class="track-duration" id="track4-duration">0:00</div>
             </div>
-            <!-- New Track -->
             <div class="track" onclick="playTrack(4)">
                 <img src="LIST.png" alt="GOD IS">
                 <div class="track-details">
@@ -229,20 +228,17 @@
         </div>
     </div>
 
-    <audio id="audio" src="JIK.mp3"></audio>
-
     <script>
         document.addEventListener('DOMContentLoaded', function () {
-            const audio = document.getElementById('audio');
             const playPauseButton = document.getElementById('play-pause-button');
             const progress = document.getElementById('progress');
             const progressBar = document.getElementById('progress-bar');
             const hoverTime = document.getElementById('hover-time');
             const currentTimeElement = document.getElementById('current-time');
             const totalTimeElement = document.getElementById('total-time');
-
             const currentTrackName = document.getElementById('current-track-name');
             const currentTrackArtist = document.getElementById('current-track-artist');
+            const albumCover = document.getElementById('album-cover');
 
             let currentTrackIndex = 0;
             const tracks = [
@@ -252,6 +248,14 @@
                 {src: 'KMSA.mp3', name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir'},
                 {src: 'GodIs.mp3', name: 'GOD IS', artist: 'Ye, Sunday Service Choir'}
             ];
+
+            // Initialize Web Audio API
+            let audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            let source = null;
+            let analyser = audioContext.createAnalyser();
+            analyser.fftSize = 2048;
+            let bufferLength = analyser.frequencyBinCount;
+            let dataArray = new Uint8Array(bufferLength);
 
             // Function to update track durations
             const updateTrackDurations = () => {
@@ -263,18 +267,42 @@
                 });
             };
 
-            audio.addEventListener('loadedmetadata', () => {
-                totalTimeElement.textContent = formatTime(audio.duration);
-            });
+            const loadTrack = (index) => {
+                if (source) {
+                    source.disconnect();
+                }
+                const audio = new Audio(tracks[index].src);
+                source = audioContext.createMediaElementSource(audio);
+                source.connect(analyser);
+                analyser.connect(audioContext.destination);
 
-            audio.addEventListener('timeupdate', ()  => {
-                const currentTime = audio.currentTime;
-                const duration = audio.duration;
-                currentTimeElement.textContent = formatTime(currentTime);
-                progress.style.width = (currentTime / duration) * 100 + '%';
-            });
+                audio.addEventListener('loadedmetadata', () => {
+                    totalTimeElement.textContent = formatTime(audio.duration);
+                });
+
+                audio.addEventListener('timeupdate', () => {
+                    const currentTime = audio.currentTime;
+                    const duration = audio.duration;
+                    currentTimeElement.textContent = formatTime(currentTime);
+                    progress.style.width = (currentTime / duration) * 100 + '%';
+                });
+
+                return audio;
+            };
+
+            const playTrack = (index) => {
+                currentTrackIndex = index;
+                const track = tracks[index];
+                currentTrackName.textContent = track.name;
+                currentTrackArtist.textContent = track.artist;
+                albumCover.src = track.src;  // Assuming album covers are named after tracks
+                const audio = loadTrack(index);
+                audio.play();
+                playPauseButton.textContent = 'Pause';
+            };
 
             playPauseButton.addEventListener('click', () => {
+                const audio = loadTrack(currentTrackIndex);
                 if (audio.paused) {
                     audio.play();
                     playPauseButton.textContent = 'Pause';
@@ -303,19 +331,6 @@
                 const seekTime = (offsetX / progressBar.clientWidth) * audio.duration;
                 audio.currentTime = seekTime;
             });
-
-            window.playTrack = function (index) {
-                currentTrackIndex = index;
-                const track = tracks[index];
-                audio.src = track.src;
-                currentTrackName.textContent = track.name;
-                currentTrackArtist.textContent = track.artist;
-                audio.play();
-                playPauseButton.textContent = 'Pause';
-                audio.addEventListener('loadedmetadata', () => {
-                    totalTimeElement.textContent = formatTime(audio.duration);
-                });
-            };
 
             document.getElementById('back').addEventListener('click', () => {
                 currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
