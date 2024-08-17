@@ -21,6 +21,7 @@
         .player-container {
             text-align: center;
             max-width: 500px;
+            display: none; /* Hide initially until all tracks are loaded */
         }
 
         .album-cover {
@@ -163,7 +164,6 @@
             color: #fff;
             font-size: 18px;
             font-weight: 700;
-            display: none; /* Hide by default */
         }
     </style>
 </head>
@@ -234,15 +234,12 @@
                 <div class="track-duration" id="track5-duration">0:00</div>
             </div>
         </div>
-
-        <div class="loading" id="loading">Loading...</div>
     </div>
+
+    <div class="loading" id="loading">Loading...</div>
 
     <script>
         const audio = new Audio();
-        audio.id = 'audio';
-        document.body.appendChild(audio);
-
         const playPauseButton = document.getElementById('play-pause-button');
         const progress = document.getElementById('progress');
         const progressBar = document.getElementById('progress-bar');
@@ -252,108 +249,131 @@
         const currentTrackName = document.getElementById('current-track-name');
         const currentTrackArtist = document.getElementById('current-track-artist');
         const albumCover = document.getElementById('album-cover');
-        const loadingElement = document.getElementById('loading');
         const playerContainer = document.getElementById('player-container');
+        const loadingMessage = document.getElementById('loading');
+
+        const tracks = [
+            { 
+                name: "JESUS IS LORD", 
+                artist: "Ye, Sunday Service Choir", 
+                src: "JIK.mp3" 
+            },
+            { 
+                name: "CLOSED ON SUNDAY", 
+                artist: "Ye, Sunday Service Choir", 
+                src: "OSND.mp3" 
+            },
+            { 
+                name: "NEW AGAIN", 
+                artist: "Ye, Sunday Service Choir", 
+                src: "NEWAGAIN.mp3" 
+            },
+            { 
+                name: "KEEP MY SPIRIT ALIVE", 
+                artist: "Ye, Sunday Service Choir", 
+                src: "KMSA.mp3" 
+            },
+            { 
+                name: "GOD IS", 
+                artist: "Ye, Sunday Service Choir", 
+                src: "GodIs.mp3" 
+            }
+        ];
 
         let currentTrackIndex = 0;
-        const tracks = [
-            {src: 'https://dl.dropboxusercontent.com/scl/fi/17uvfockn6btiwp47guh9/JIK.mp3?rlkey=lu3tgqxn7qoclpifyrae576om&st=i0dop1cg', name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir', albumCover: 'LIST.png'},
-            {src: 'https://dl.dropboxusercontent.com/scl/fi/0cbrucbcidn0y20anblzr/COS.mp3?rlkey=mpwmh2jmuxjqnxdhykw4vc4t5&st=iq7e1b65', name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir', albumCover: 'LIST.png'},
-            {src: 'https://dl.dropboxusercontent.com/scl/fi/f3ivtr7ss7dqsnd8pm5os/NA.mp3?rlkey=ntzmoec42nspomct4d8wejc3j&st=iqaqfgq0', name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir', albumCover: 'LIST.png'},
-            {src: 'https://dl.dropboxusercontent.com/scl/fi/rtj2v2o6z7n9ot2nn3gq1/KMSA.mp3?rlkey=za24hcoy5jr3gjjcq1gwt7m8v&st=iwwe9qf6', name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir', albumCover: 'LIST.png'},
-            {src: 'https://dl.dropboxusercontent.com/scl/fi/8izlhdvzt2xiyk8paztq8/GI.mp3?rlkey=61c8mjfggbwcp0mnngjr8tiw9&st=iwv1qe7w', name: 'GOD IS', artist: 'Ye, Sunday Service Choir', albumCover: 'LIST.png'},
-        ];
+
+        function preloadTracks(tracks, callback) {
+            let loadedCount = 0;
+            tracks.forEach(track => {
+                const audioElement = new Audio();
+                audioElement.src = track.src;
+                audioElement.oncanplaythrough = () => {
+                    loadedCount++;
+                    document.getElementById(`track${loadedCount}-duration`).textContent = formatTime(audioElement.duration);
+                    if (loadedCount === tracks.length) {
+                        callback();
+                    }
+                };
+            });
+        }
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        }
 
         function loadTrack(index) {
             const track = tracks[index];
             audio.src = track.src;
             currentTrackName.textContent = track.name;
             currentTrackArtist.textContent = track.artist;
-            albumCover.src = track.albumCover;
-            loadingElement.style.display = 'block';
-            audio.load();
-            audio.onloadedmetadata = function () {
+            albumCover.src = "LIST.png";
+            audio.onloadedmetadata = () => {
                 totalTimeElement.textContent = formatTime(audio.duration);
-                document.getElementById(`track${index + 1}-duration`).textContent = formatTime(audio.duration);
-                loadingElement.style.display = 'none';
             };
         }
 
         function playTrack(index) {
-            if (currentTrackIndex !== index) {
-                currentTrackIndex = index;
-                loadTrack(index);
-                playPauseButton.textContent = 'Pause';
-                audio.play();
-            } else if (audio.paused) {
-                playPauseButton.textContent = 'Pause';
-                audio.play();
-            } else {
-                playPauseButton.textContent = 'Play';
-                audio.pause();
-            }
-        }
-
-        function updateProgressBar() {
-            const progressPercentage = (audio.currentTime / audio.duration) * 100;
-            progress.style.width = `${progressPercentage}%`;
-            currentTimeElement.textContent = formatTime(audio.currentTime);
-        }
-
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const secondsLeft = Math.floor(seconds % 60);
-            return `${minutes}:${secondsLeft < 10 ? '0' : ''}${secondsLeft}`;
-        }
-
-        function skipTrack() {
-            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
-            playTrack(currentTrackIndex);
-        }
-
-        function backTrack() {
-            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-            playTrack(currentTrackIndex);
+            currentTrackIndex = index;
+            loadTrack(index);
+            audio.play();
+            playPauseButton.textContent = "Pause";
         }
 
         playPauseButton.addEventListener('click', () => {
             if (audio.paused) {
-                playPauseButton.textContent = 'Pause';
                 audio.play();
+                playPauseButton.textContent = "Pause";
             } else {
-                playPauseButton.textContent = 'Play';
                 audio.pause();
+                playPauseButton.textContent = "Play";
             }
         });
 
-        progressBar.addEventListener('click', (event) => {
-            const progressBarWidth = progressBar.clientWidth;
-            const clickPosition = event.offsetX;
-            const clickPercentage = clickPosition / progressBarWidth;
-            audio.currentTime = clickPercentage * audio.duration;
-        });
+        audio.ontimeupdate = () => {
+            const progressPercent = (audio.currentTime / audio.duration) * 100;
+            progress.style.width = `${progressPercent}%`;
+            currentTimeElement.textContent = formatTime(audio.currentTime);
+        };
 
-        progressBar.addEventListener('mousemove', (event) => {
-            const progressBarWidth = progressBar.clientWidth;
-            const hoverPosition = event.offsetX;
-            const hoverPercentage = hoverPosition / progressBarWidth;
-            const hoverTimeInSeconds = hoverPercentage * audio.duration;
-            hoverTime.textContent = formatTime(hoverTimeInSeconds);
-            hoverTime.style.left = `${hoverPosition}px`;
-            hoverTime.style.display = 'block';
+        progressBar.addEventListener('mousemove', (e) => {
+            const boundingRect = progressBar.getBoundingClientRect();
+            const offsetX = e.clientX - boundingRect.left;
+            const progressPercent = offsetX / boundingRect.width;
+            const hoverTimeValue = audio.duration * progressPercent;
+            hoverTime.style.display = "block";
+            hoverTime.style.left = `${offsetX}px`;
+            hoverTime.textContent = formatTime(hoverTimeValue);
         });
 
         progressBar.addEventListener('mouseleave', () => {
-            hoverTime.style.display = 'none';
+            hoverTime.style.display = "none";
         });
 
-        audio.addEventListener('timeupdate', updateProgressBar);
-        audio.addEventListener('ended', skipTrack);
+        progressBar.addEventListener('click', (e) => {
+            const boundingRect = progressBar.getBoundingClientRect();
+            const offsetX = e.clientX - boundingRect.left;
+            const progressPercent = offsetX / boundingRect.width;
+            audio.currentTime = audio.duration * progressPercent;
+        });
 
-        document.getElementById('skip').addEventListener('click', skipTrack);
-        document.getElementById('back').addEventListener('click', backTrack);
+        document.getElementById('back').addEventListener('click', () => {
+            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+            playTrack(currentTrackIndex);
+        });
 
-        loadTrack(currentTrackIndex);
+        document.getElementById('skip').addEventListener('click', () => {
+            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+            playTrack(currentTrackIndex);
+        });
+
+        // Preload all tracks and display the player once done
+        preloadTracks(tracks, () => {
+            loadingMessage.style.display = "none";
+            playerContainer.style.display = "block";
+            loadTrack(0);
+        });
     </script>
 </body>
 </html>
