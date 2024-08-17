@@ -158,10 +158,17 @@
             font-weight: 700;
             margin-left: 10px;
         }
+
+        .loading {
+            color: #fff;
+            font-size: 18px;
+            font-weight: 700;
+            display: none; /* Hide by default */
+        }
     </style>
 </head>
 <body>
-    <div class="player-container">
+    <div class="player-container" id="player-container">
         <img src="LIST.png" alt="Album Cover" class="album-cover" id="album-cover">
 
         <div class="track-info">
@@ -186,7 +193,7 @@
         </div>
 
         <div class="tracklist-container">
-            <div class="track" onclick="playTrack(0)">
+            <div class="track" onclick="playTrack(0)" data-index="0">
                 <img src="LIST.png" alt="JESUS IS LORD">
                 <div class="track-details">
                     <div class="track-name-list">1. JESUS IS LORD</div>
@@ -194,7 +201,7 @@
                 </div>
                 <div class="track-duration" id="track1-duration">0:00</div>
             </div>
-            <div class="track" onclick="playTrack(1)">
+            <div class="track" onclick="playTrack(1)" data-index="1">
                 <img src="LIST.png" alt="CLOSED ON SUNDAY">
                 <div class="track-details">
                     <div class="track-name-list">2. CLOSED ON SUNDAY</div>
@@ -202,7 +209,7 @@
                 </div>
                 <div class="track-duration" id="track2-duration">0:00</div>
             </div>
-            <div class="track" onclick="playTrack(2)">
+            <div class="track" onclick="playTrack(2)" data-index="2">
                 <img src="LIST.png" alt="NEW AGAIN">
                 <div class="track-details">
                     <div class="track-name-list">3. NEW AGAIN</div>
@@ -210,7 +217,7 @@
                 </div>
                 <div class="track-duration" id="track3-duration">0:00</div>
             </div>
-            <div class="track" onclick="playTrack(3)">
+            <div class="track" onclick="playTrack(3)" data-index="3">
                 <img src="LIST.png" alt="KEEP MY SPIRIT ALIVE">
                 <div class="track-details">
                     <div class="track-name-list">4. KEEP MY SPIRIT ALIVE</div>
@@ -218,7 +225,7 @@
                 </div>
                 <div class="track-duration" id="track4-duration">0:00</div>
             </div>
-            <div class="track" onclick="playTrack(4)">
+            <div class="track" onclick="playTrack(4)" data-index="4">
                 <img src="LIST.png" alt="GOD IS">
                 <div class="track-details">
                     <div class="track-name-list">5. GOD IS</div>
@@ -227,6 +234,8 @@
                 <div class="track-duration" id="track5-duration">0:00</div>
             </div>
         </div>
+
+        <div class="loading" id="loading">Loading...</div>
     </div>
 
     <script>
@@ -247,6 +256,11 @@
             const loadingElement = document.getElementById('loading');
             const playerContainer = document.getElementById('player-container');
             
+            if (!playerContainer) {
+                console.error('Player container not found');
+                return;
+            }
+
             let currentTrackIndex = 0;
             const tracks = [
                 {src: 'JIK.mp3', name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir'},
@@ -297,7 +311,7 @@
                 currentTrackName.textContent = track.name;
                 currentTrackArtist.textContent = track.artist;
                 albumCover.style.opacity = 1;
-                loadingElement.style.display = 'none'; // Hide loading text
+                if (loadingElement) loadingElement.style.display = 'none'; // Hide loading text
             };
     
             preloadResources().then(() => {
@@ -364,12 +378,11 @@
                 });
     
                 const playTrack = (index) => {
-                    if (source) {
-                        source.disconnect();
+                    if (audio.src) {
+                        audio.src = tracks[index].src;
                     }
                     currentTrackIndex = index;
                     const track = tracks[index];
-                    audio.src = track.src;
                     currentTrackName.textContent = track.name;
                     currentTrackArtist.textContent = track.artist;
                     audio.currentTime = 0; // Start from the beginning
@@ -385,11 +398,13 @@
                     const secs = Math.floor(seconds % 60);
                     return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
                 }
+            }).catch(err => {
+                console.error('Error loading resources:', err);
             });
     
             // Show loading text initially
             playerContainer.style.display = 'none';
-            loadingElement.style.display = 'block';
+            if (loadingElement) loadingElement.style.display = 'block';
         });
     </script>    
 </body>
