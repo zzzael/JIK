@@ -257,88 +257,89 @@
 
         let currentTrackIndex = 0;
         const tracks = [
-            {src: 'https://cdn.discordapp.com/attachments/1167962222463553538/1274458881883635722/JIK.mp3', name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir', cover: 'LIST.png'},
-            {src: 'https://cdn.discordapp.com/attachments/1167962222463553538/1274458690539356170/OSND.mp3', name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir', cover: 'LIST.png'},
-            {src: 'https://cdn.discordapp.com/attachments/1167962222463553538/1274458805757022280/NEWAGAIN.mp3', name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir', cover: 'LIST.png'},
-            {src: 'https://cdn.discordapp.com/attachments/1167962222463553538/1274458965249364111/KMSA.mp3', name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir', cover: 'LIST.png'},
-            {src: 'https://cdn.discordapp.com/attachments/1167962222463553538/1274458275844194324/GodIs.mp3', name: 'GOD IS', artist: 'Ye, Sunday Service Choir', cover: 'LIST.png'}
+            {src: 'https://dl.dropboxusercontent.com/scl/fi/17uvfockn6btiwp47guh9/JIK.mp3?rlkey=lu3tgqxn7qoclpifyrae576om&st=i0dop1cg', name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir', albumCover: 'LIST.png'},
+            {src: 'https://dl.dropboxusercontent.com/scl/fi/0cbrucbcidn0y20anblzr/COS.mp3?rlkey=mpwmh2jmuxjqnxdhykw4vc4t5&st=iq7e1b65', name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir', albumCover: 'LIST.png'},
+            {src: 'https://dl.dropboxusercontent.com/scl/fi/f3ivtr7ss7dqsnd8pm5os/NA.mp3?rlkey=ntzmoec42nspomct4d8wejc3j&st=iqaqfgq0', name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir', albumCover: 'LIST.png'},
+            {src: 'https://dl.dropboxusercontent.com/scl/fi/rtj2v2o6z7n9ot2nn3gq1/KMSA.mp3?rlkey=za24hcoy5jr3gjjcq1gwt7m8v&st=iwwe9qf6', name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir', albumCover: 'LIST.png'},
+            {src: 'https://dl.dropboxusercontent.com/scl/fi/8izlhdvzt2xiyk8paztq8/GI.mp3?rlkey=61c8mjfggbwcp0mnngjr8tiw9&st=iwv1qe7w', name: 'GOD IS', artist: 'Ye, Sunday Service Choir', albumCover: 'LIST.png'},
         ];
 
         function loadTrack(index) {
-            if (index >= 0 && index < tracks.length) {
-                loadingElement.style.display = 'block';
-                audio.src = tracks[index].src;
-                currentTrackName.textContent = tracks[index].name;
-                currentTrackArtist.textContent = tracks[index].artist;
-                albumCover.src = tracks[index].cover;
-                currentTrackIndex = index;
-                audio.load();
-            }
+            const track = tracks[index];
+            audio.src = track.src;
+            currentTrackName.textContent = track.name;
+            currentTrackArtist.textContent = track.artist;
+            albumCover.src = track.albumCover;
+            loadingElement.style.display = 'block';
+            audio.load();
+            audio.onloadedmetadata = function () {
+                totalTimeElement.textContent = formatTime(audio.duration);
+                document.getElementById(`track${index + 1}-duration`).textContent = formatTime(audio.duration);
+                loadingElement.style.display = 'none';
+            };
         }
 
         function playTrack(index) {
-            loadTrack(index);
-            audio.play();
-            playPauseButton.textContent = 'Pause';
+            if (currentTrackIndex !== index) {
+                currentTrackIndex = index;
+                loadTrack(index);
+                playPauseButton.textContent = 'Pause';
+                audio.play();
+            } else if (audio.paused) {
+                playPauseButton.textContent = 'Pause';
+                audio.play();
+            } else {
+                playPauseButton.textContent = 'Play';
+                audio.pause();
+            }
         }
 
-        audio.addEventListener('loadedmetadata', () => {
-            totalTimeElement.textContent = formatTime(audio.duration);
-            document.getElementById(`track${currentTrackIndex + 1}-duration`).textContent = formatTime(audio.duration);
-            loadingElement.style.display = 'none';
-        });
-
-        audio.addEventListener('timeupdate', () => {
+        function updateProgressBar() {
+            const progressPercentage = (audio.currentTime / audio.duration) * 100;
+            progress.style.width = `${progressPercentage}%`;
             currentTimeElement.textContent = formatTime(audio.currentTime);
-            progress.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
-        });
-
-        audio.addEventListener('ended', () => {
-            skipTrack(1); // Auto-play the next track
-        });
+        }
 
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+            const secondsLeft = Math.floor(seconds % 60);
+            return `${minutes}:${secondsLeft < 10 ? '0' : ''}${secondsLeft}`;
         }
 
-        function playPause() {
+        function skipTrack() {
+            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+            playTrack(currentTrackIndex);
+        }
+
+        function backTrack() {
+            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+            playTrack(currentTrackIndex);
+        }
+
+        playPauseButton.addEventListener('click', () => {
             if (audio.paused) {
-                audio.play();
                 playPauseButton.textContent = 'Pause';
+                audio.play();
             } else {
-                audio.pause();
                 playPauseButton.textContent = 'Play';
+                audio.pause();
             }
-        }
-
-        playPauseButton.addEventListener('click', playPause);
-
-        document.getElementById('back').addEventListener('click', () => {
-            skipTrack(-1);
         });
 
-        document.getElementById('skip').addEventListener('click', () => {
-            skipTrack(1);
+        progressBar.addEventListener('click', (event) => {
+            const progressBarWidth = progressBar.clientWidth;
+            const clickPosition = event.offsetX;
+            const clickPercentage = clickPosition / progressBarWidth;
+            audio.currentTime = clickPercentage * audio.duration;
         });
 
-        function skipTrack(direction) {
-            let newIndex = currentTrackIndex + direction;
-            if (newIndex >= tracks.length) {
-                newIndex = 0;
-            } else if (newIndex < 0) {
-                newIndex = tracks.length - 1;
-            }
-            playTrack(newIndex);
-        }
-
-        progressBar.addEventListener('mousemove', (e) => {
-            const barWidth = progressBar.clientWidth;
-            const mouseX = e.offsetX;
-            const hoverTimeValue = (mouseX / barWidth) * audio.duration;
-            hoverTime.textContent = formatTime(hoverTimeValue);
-            hoverTime.style.left = `${mouseX}px`;
+        progressBar.addEventListener('mousemove', (event) => {
+            const progressBarWidth = progressBar.clientWidth;
+            const hoverPosition = event.offsetX;
+            const hoverPercentage = hoverPosition / progressBarWidth;
+            const hoverTimeInSeconds = hoverPercentage * audio.duration;
+            hoverTime.textContent = formatTime(hoverTimeInSeconds);
+            hoverTime.style.left = `${hoverPosition}px`;
             hoverTime.style.display = 'block';
         });
 
@@ -346,16 +347,13 @@
             hoverTime.style.display = 'none';
         });
 
-        progressBar.addEventListener('click', (e) => {
-            const barWidth = progressBar.clientWidth;
-            const clickPosition = e.offsetX;
-            const newTime = (clickPosition / barWidth) * audio.duration;
-            audio.currentTime = newTime;
-        });
+        audio.addEventListener('timeupdate', updateProgressBar);
+        audio.addEventListener('ended', skipTrack);
 
-        window.addEventListener('DOMContentLoaded', () => {
-            loadTrack(0); // Load the first track by default
-        });
+        document.getElementById('skip').addEventListener('click', skipTrack);
+        document.getElementById('back').addEventListener('click', backTrack);
+
+        loadTrack(currentTrackIndex);
     </script>
 </body>
 </html>
