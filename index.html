@@ -264,26 +264,40 @@
 
         function preloadTracks(tracks, callback) {
             let loadedCount = 0;
-            const trackElements = [];
 
             tracks.forEach((track, index) => {
-                const audioElement = new Audio();
-                audioElement.src = track.src;
-                
-                audioElement.addEventListener('canplaythrough', () => {
-                    loadedCount++;
-                    document.getElementById(`track${index + 1}-duration`).textContent = formatTime(audioElement.duration);
-                    if (loadedCount === tracks.length) {
-                        callback();
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', track.src, true);
+                xhr.responseType = 'blob';
+
+                xhr.onload = () => {
+                    if (xhr.status >= 200 && xhr.status < 300) {
+                        const audioBlob = xhr.response;
+                        const audioUrl = URL.createObjectURL(audioBlob);
+                        const audioElement = new Audio(audioUrl);
+
+                        audioElement.addEventListener('canplaythrough', () => {
+                            loadedCount++;
+                            document.getElementById(`track${index + 1}-duration`).textContent = formatTime(audioElement.duration);
+                            if (loadedCount === tracks.length) {
+                                callback();
+                            }
+                        });
+
+                        audioElement.addEventListener('error', (e) => {
+                            console.error(`Failed to load track ${track.src}: ${e.message}`);
+                            loadingMessage.textContent = `Failed to load track ${track.name}`;
+                        });
+                    } else {
+                        console.error(`Failed to fetch ${track.src}: ${xhr.statusText}`);
                     }
-                });
+                };
 
-                audioElement.addEventListener('error', (e) => {
-                    console.error(`Failed to load track ${track.src}: ${e.message}`);
-                    loadingMessage.textContent = `Failed to load track ${track.name}`;
-                });
+                xhr.onerror = () => {
+                    console.error(`Network error while fetching ${track.src}`);
+                };
 
-                trackElements.push(audioElement);
+                xhr.send();
             });
         }
 
@@ -302,6 +316,11 @@
 
             audio.onloadedmetadata = () => {
                 totalTimeElement.textContent = formatTime(audio.duration);
+            };
+
+            audio.onerror = () => {
+                console.error(`Error loading track ${track.src}`);
+                loadingMessage.textContent = `Error loading track ${track.name}`;
             };
         }
 
@@ -365,7 +384,6 @@
             playerContainer.style.display = "block";
             loadTrack(0);
         });
-
     </script>
 </body>
 </html>
