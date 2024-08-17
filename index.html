@@ -264,8 +264,8 @@
             let currentTrackIndex = 0;
             const tracks = [
                 {src: 'JIK.mp3', name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir'},
-                {src: 'OSND.mp3', name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir'},
-                {src: 'NEWAGAIN.mp3', name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir'},
+                {src: 'COS2.mp3', name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir'},
+                {src: 'NEW.mp3', name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir'},
                 {src: 'KMSA.mp3', name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir'},
                 {src: 'GodIs.mp3', name: 'GOD IS', artist: 'Ye, Sunday Service Choir'}
             ];
@@ -307,7 +307,7 @@
 
             // Define playTrack function globally
             const playTrack = (index) => {
-                if (audio.src) {
+                if (audio.src !== tracks[index].src) {
                     audio.src = tracks[index].src;
                 }
                 currentTrackIndex = index;
@@ -315,7 +315,9 @@
                 currentTrackName.textContent = track.name;
                 currentTrackArtist.textContent = track.artist;
                 audio.currentTime = 0; // Start from the beginning
-                audio.play();
+                audio.play().catch(error => {
+                    console.error('Playback error:', error);
+                });
                 playPauseButton.textContent = 'Pause';
                 audio.addEventListener('loadedmetadata', () => {
                     totalTimeElement.textContent = formatTime(audio.duration);
@@ -360,7 +362,9 @@
 
                 playPauseButton.addEventListener('click', () => {
                     if (audio.paused) {
-                        audio.play();
+                        audio.play().catch(error => {
+                            console.error('Playback error:', error);
+                        });
                         playPauseButton.textContent = 'Pause';
                     } else {
                         audio.pause();
