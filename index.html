@@ -230,130 +230,167 @@
     </div>
 
     <script>
-        // Initialize AudioContext and audio variables
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-        let audioElement = new Audio();
-        let source = null;
-        let analyser = audioContext.createAnalyser();
-        analyser.fftSize = 2048;
-        let bufferLength = analyser.frequencyBinCount;
-        let dataArray = new Uint8Array(bufferLength);
-
-        const playPauseButton = document.getElementById('play-pause-button');
-        const progress = document.getElementById('progress');
-        const progressBar = document.getElementById('progress-bar');
-        const hoverTime = document.getElementById('hover-time');
-        const currentTimeElement = document.getElementById('current-time');
-        const totalTimeElement = document.getElementById('total-time');
-        const currentTrackName = document.getElementById('current-track-name');
-        const currentTrackArtist = document.getElementById('current-track-artist');
-        const albumCover = document.getElementById('album-cover');
-
-        let currentTrackIndex = 0;
-        const tracks = [
-            {src: 'JIK.mp3', name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir'},
-            {src: 'COS2.mp3', name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir'},
-            {src: 'NEW.mp3', name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir'},
-            {src: 'KMSA.mp3', name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir'},
-            {src: 'GodIs.mp3', name: 'GOD IS', artist: 'Ye, Sunday Service Choir'}
-        ];
-
-        const formatTime = (seconds) => {
-            const minutes = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
-        };
-
-        const updateTrackDurations = () => {
-            tracks.forEach((track, index) => {
-                const tempAudio = new Audio(track.src);
-                tempAudio.addEventListener('loadedmetadata', () => {
-                    document.getElementById(`track${index + 1}-duration`).textContent = formatTime(tempAudio.duration);
+        document.addEventListener('DOMContentLoaded', function () {
+            const audio = document.createElement('audio');
+            audio.id = 'audio';
+            document.body.appendChild(audio);
+    
+            const playPauseButton = document.getElementById('play-pause-button');
+            const progress = document.getElementById('progress');
+            const progressBar = document.getElementById('progress-bar');
+            const hoverTime = document.getElementById('hover-time');
+            const currentTimeElement = document.getElementById('current-time');
+            const totalTimeElement = document.getElementById('total-time');
+            const currentTrackName = document.getElementById('current-track-name');
+            const currentTrackArtist = document.getElementById('current-track-artist');
+            const albumCover = document.getElementById('album-cover');
+            const loadingElement = document.getElementById('loading');
+            const playerContainer = document.getElementById('player-container');
+            
+            let currentTrackIndex = 0;
+            const tracks = [
+                {src: 'JIK.mp3', name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir'},
+                {src: 'COS2.mp3', name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir'},
+                {src: 'NEW.mp3', name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir'},
+                {src: 'KMSA.mp3', name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir'},
+                {src: 'GodIs.mp3', name: 'GOD IS', artist: 'Ye, Sunday Service Choir'}
+            ];
+    
+            // Preload album cover image
+            const preloadImage = (src, callback) => {
+                const img = new Image();
+                img.src = src;
+                img.onload = callback;
+                img.onerror = callback; // Call callback even on error to avoid hanging
+            };
+    
+            const preloadAudio = (src, callback) => {
+                const tempAudio = new Audio(src);
+                tempAudio.oncanplaythrough = callback;
+                tempAudio.onerror = callback; // Call callback even on error to avoid hanging
+            };
+    
+            const preloadResources = () => {
+                return new Promise((resolve) => {
+                    let loadedCount = 0;
+                    const totalCount = tracks.length + 1; // Including the album cover
+    
+                    // Preload album cover
+                    preloadImage('LIST.png', () => {
+                        loadedCount++;
+                        if (loadedCount === totalCount) resolve();
+                    });
+    
+                    // Preload all audio tracks
+                    tracks.forEach(track => {
+                        preloadAudio(track.src, () => {
+                            loadedCount++;
+                            if (loadedCount === totalCount) resolve();
+                        });
+                    });
                 });
-            });
-        };
-
-        const loadTrack = (index) => {
-            if (source) {
-                source.disconnect();
-            }
-            audioElement.src = tracks[index].src;
-            source = audioContext.createMediaElementSource(audioElement);
-            source.connect(analyser);
-            analyser.connect(audioContext.destination);
-
-            audioElement.addEventListener('loadedmetadata', () => {
-                totalTimeElement.textContent = formatTime(audioElement.duration);
-                albumCover.src = `LIST.png`;  // Update with the correct album cover image
-            });
-
-            audioElement.addEventListener('timeupdate', () => {
-                const currentTime = audioElement.currentTime;
-                const duration = audioElement.duration;
-                currentTimeElement.textContent = formatTime(currentTime);
-                progress.style.width = (currentTime / duration) * 100 + '%';
-            });
-
-            return audioElement;
-        };
-
-        window.playTrack = (index) => {
-            currentTrackIndex = index;
-            const track = tracks[index];
-            currentTrackName.textContent = track.name;
-            currentTrackArtist.textContent = track.artist;
-            const audio = loadTrack(index);
-            audio.play();
-            playPauseButton.textContent = 'Pause';
-        };
-
-        playPauseButton.addEventListener('click', () => {
-            if (audioElement) {
-                if (audioElement.paused) {
-                    audioElement.play();
+            };
+    
+            const initializePlayer = () => {
+                const track = tracks[currentTrackIndex];
+                audio.src = track.src;
+                currentTrackName.textContent = track.name;
+                currentTrackArtist.textContent = track.artist;
+                albumCover.style.opacity = 1;
+                loadingElement.style.display = 'none'; // Hide loading text
+            };
+    
+            preloadResources().then(() => {
+                // Show player container after resources are loaded
+                playerContainer.style.display = 'block';
+                initializePlayer();
+    
+                audio.addEventListener('loadedmetadata', () => {
+                    totalTimeElement.textContent = formatTime(audio.duration);
+                });
+    
+                audio.addEventListener('timeupdate', () => {
+                    const currentTime = audio.currentTime;
+                    const duration = audio.duration;
+                    currentTimeElement.textContent = formatTime(currentTime);
+                    progress.style.width = (currentTime / duration) * 100 + '%';
+                });
+    
+                playPauseButton.addEventListener('click', () => {
+                    if (audio.paused) {
+                        audio.play();
+                        playPauseButton.textContent = 'Pause';
+                    } else {
+                        audio.pause();
+                        playPauseButton.textContent = 'Play';
+                    }
+                });
+    
+                progressBar.addEventListener('mousemove', (e) => {
+                    const rect = progressBar.getBoundingClientRect();
+                    const offsetX = e.clientX - rect.left;
+                    const hoverTimeValue = (offsetX / progressBar.clientWidth) * audio.duration;
+                    hoverTime.textContent = formatTime(hoverTimeValue);
+                    hoverTime.style.left = offsetX + 'px';
+                    hoverTime.style.display = 'block';
+                });
+    
+                progressBar.addEventListener('mouseout', () => {
+                    hoverTime.style.display = 'none';
+                });
+    
+                progressBar.addEventListener('click', (e) => {
+                    const rect = progressBar.getBoundingClientRect();
+                    const offsetX = e.clientX - rect.left;
+                    const seekTime = (offsetX / progressBar.clientWidth) * audio.duration;
+                    audio.currentTime = seekTime;
+                });
+    
+                document.querySelectorAll('.track').forEach(trackElement => {
+                    trackElement.addEventListener('click', () => {
+                        const index = parseInt(trackElement.getAttribute('data-index'), 10);
+                        playTrack(index);
+                    });
+                });
+    
+                document.getElementById('back').addEventListener('click', () => {
+                    currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+                    playTrack(currentTrackIndex);
+                });
+    
+                document.getElementById('skip').addEventListener('click', () => {
+                    currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+                    playTrack(currentTrackIndex);
+                });
+    
+                const playTrack = (index) => {
+                    if (source) {
+                        source.disconnect();
+                    }
+                    currentTrackIndex = index;
+                    const track = tracks[index];
+                    audio.src = track.src;
+                    currentTrackName.textContent = track.name;
+                    currentTrackArtist.textContent = track.artist;
+                    audio.currentTime = 0; // Start from the beginning
+                    audio.play();
                     playPauseButton.textContent = 'Pause';
-                } else {
-                    audioElement.pause();
-                    playPauseButton.textContent = 'Play';
+                    audio.addEventListener('loadedmetadata', () => {
+                        totalTimeElement.textContent = formatTime(audio.duration);
+                    });
+                };
+    
+                function formatTime(seconds) {
+                    const minutes = Math.floor(seconds / 60);
+                    const secs = Math.floor(seconds % 60);
+                    return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
                 }
-            }
+            });
+    
+            // Show loading text initially
+            playerContainer.style.display = 'none';
+            loadingElement.style.display = 'block';
         });
-
-        progressBar.addEventListener('mousemove', (e) => {
-            if (audioElement) {
-                const rect = progressBar.getBoundingClientRect();
-                const offsetX = e.clientX - rect.left;
-                const hoverTimeValue = (offsetX / progressBar.clientWidth) * audioElement.duration;
-                hoverTime.textContent = formatTime(hoverTimeValue);
-                hoverTime.style.left = offsetX + 'px';
-                hoverTime.style.display = 'block';
-            }
-        });
-
-        progressBar.addEventListener('mouseout', () => {
-            hoverTime.style.display = 'none';
-        });
-
-        progressBar.addEventListener('click', (e) => {
-            if (audioElement) {
-                const rect = progressBar.getBoundingClientRect();
-                const offsetX = e.clientX - rect.left;
-                const seekTime = (offsetX / progressBar.clientWidth) * audioElement.duration;
-                audioElement.currentTime = seekTime;
-            }
-        });
-
-        document.getElementById('back').addEventListener('click', () => {
-            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-            playTrack(currentTrackIndex);
-        });
-
-        document.getElementById('skip').addEventListener('click', () => {
-            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
-            playTrack(currentTrackIndex);
-        });
-
-        updateTrackDurations();
-    </script>
+    </script>    
 </body>
 </html>
