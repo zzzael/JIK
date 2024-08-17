@@ -253,47 +253,37 @@
         const loadingMessage = document.getElementById('loading');
 
         const tracks = [
-            { 
-                name: "JESUS IS LORD", 
-                artist: "Ye, Sunday Service Choir", 
-                src: "JIK.mp3" 
-            },
-            { 
-                name: "CLOSED ON SUNDAY", 
-                artist: "Ye, Sunday Service Choir", 
-                src: "OSND.mp3" 
-            },
-            { 
-                name: "NEW AGAIN", 
-                artist: "Ye, Sunday Service Choir", 
-                src: "NEWAGAIN.mp3" 
-            },
-            { 
-                name: "KEEP MY SPIRIT ALIVE", 
-                artist: "Ye, Sunday Service Choir", 
-                src: "KMSA.mp3" 
-            },
-            { 
-                name: "GOD IS", 
-                artist: "Ye, Sunday Service Choir", 
-                src: "GodIs.mp3" 
-            }
+            { name: "JESUS IS LORD", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/JIK.mp3" },
+            { name: "CLOSED ON SUNDAY", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/OSND.mp3" },
+            { name: "NEW AGAIN", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/NEWAGAIN.mp3" },
+            { name: "KEEP MY SPIRIT ALIVE", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/KMSA.mp3" },
+            { name: "GOD IS", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/GodIs.mp3" }
         ];
 
         let currentTrackIndex = 0;
 
         function preloadTracks(tracks, callback) {
             let loadedCount = 0;
-            tracks.forEach(track => {
+            const trackElements = [];
+
+            tracks.forEach((track, index) => {
                 const audioElement = new Audio();
                 audioElement.src = track.src;
-                audioElement.oncanplaythrough = () => {
+                
+                audioElement.addEventListener('canplaythrough', () => {
                     loadedCount++;
-                    document.getElementById(`track${loadedCount}-duration`).textContent = formatTime(audioElement.duration);
+                    document.getElementById(`track${index + 1}-duration`).textContent = formatTime(audioElement.duration);
                     if (loadedCount === tracks.length) {
                         callback();
                     }
-                };
+                });
+
+                audioElement.addEventListener('error', (e) => {
+                    console.error(`Failed to load track ${track.src}: ${e.message}`);
+                    loadingMessage.textContent = `Failed to load track ${track.name}`;
+                });
+
+                trackElements.push(audioElement);
             });
         }
 
@@ -309,6 +299,7 @@
             currentTrackName.textContent = track.name;
             currentTrackArtist.textContent = track.artist;
             albumCover.src = "LIST.png";
+
             audio.onloadedmetadata = () => {
                 totalTimeElement.textContent = formatTime(audio.duration);
             };
@@ -374,6 +365,7 @@
             playerContainer.style.display = "block";
             loadTrack(0);
         });
+
     </script>
 </body>
 </html>
