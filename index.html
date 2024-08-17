@@ -263,165 +263,103 @@
 
             let currentTrackIndex = 0;
             const tracks = [
-                {src: 'JIK.mp3', name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir'},
-                {src: 'COS2.mp3', name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir'},
-                {src: 'NEW.mp3', name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir'},
-                {src: 'KMSA.mp3', name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir'},
-                {src: 'GodIs.mp3', name: 'GOD IS', artist: 'Ye, Sunday Service Choir'}
+                {src: 'JIK.mp3', name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir', cover: 'LIST.png'},
+                {src: 'CLOSED.mp3', name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir', cover: 'LIST.png'},
+                {src: 'NEW.mp3', name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir', cover: 'LIST.png'},
+                {src: 'KMSA.mp3', name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir', cover: 'LIST.png'},
+                {src: 'GOD.mp3', name: 'GOD IS', artist: 'Ye, Sunday Service Choir', cover: 'LIST.png'},
             ];
 
-            // Preload album cover image
-            const preloadImage = (src, callback) => {
-                const img = new Image();
-                img.src = src;
-                img.onload = callback;
-                img.onerror = callback; // Call callback even on error to avoid hanging
-            };
-
-            const preloadAudio = (src, callback) => {
-                const tempAudio = new Audio(src);
-                tempAudio.oncanplaythrough = callback;
-                tempAudio.onerror = callback; // Call callback even on error to avoid hanging
-            };
-
-            const preloadResources = () => {
-                return new Promise((resolve) => {
-                    let loadedCount = 0;
-                    const totalCount = tracks.length + 1; // Including the album cover
-
-                    // Preload album cover
-                    preloadImage('LIST.png', () => {
-                        loadedCount++;
-                        if (loadedCount === totalCount) resolve();
-                    });
-
-                    // Preload all audio tracks
-                    tracks.forEach(track => {
-                        preloadAudio(track.src, () => {
-                            loadedCount++;
-                            if (loadedCount === totalCount) resolve();
-                        });
-                    });
-                });
-            };
-
-            // Define playTrack function globally
-            const playTrack = (index) => {
-                if (audio.src !== tracks[index].src) {
+            function loadTrack(index) {
+                if (index >= 0 && index < tracks.length) {
+                    loadingElement.style.display = 'block';
                     audio.src = tracks[index].src;
+                    currentTrackName.textContent = tracks[index].name;
+                    currentTrackArtist.textContent = tracks[index].artist;
+                    albumCover.src = tracks[index].cover;
+                    currentTrackIndex = index;
+                    audio.load();
                 }
-                currentTrackIndex = index;
-                const track = tracks[index];
-                currentTrackName.textContent = track.name;
-                currentTrackArtist.textContent = track.artist;
-                audio.currentTime = 0; // Start from the beginning
-                audio.play().catch(error => {
-                    console.error('Playback error:', error);
-                });
-                playPauseButton.textContent = 'Pause';
-                audio.addEventListener('loadedmetadata', () => {
-                    totalTimeElement.textContent = formatTime(audio.duration);
-                });
-            };
+            }
 
-            const initializePlayer = () => {
-                const track = tracks[currentTrackIndex];
-                audio.src = track.src;
-                currentTrackName.textContent = track.name;
-                currentTrackArtist.textContent = track.artist;
-                albumCover.style.opacity = 1;
-                if (loadingElement) loadingElement.style.display = 'none'; // Hide loading text
-            };
+            function playTrack(index) {
+                loadTrack(index);
+                audio.play();
+            }
 
-            const updateTrackListDurations = () => {
-                tracks.forEach((track, index) => {
-                    const tempAudio = new Audio(track.src);
-                    tempAudio.onloadedmetadata = () => {
-                        const duration = tempAudio.duration;
-                        document.getElementById(`track${index + 1}-duration`).textContent = formatTime(duration);
-                    };
-                });
-            };
-
-            preloadResources().then(() => {
-                // Show player container after resources are loaded
-                playerContainer.style.display = 'block';
-                initializePlayer();
-                updateTrackListDurations();
-
-                audio.addEventListener('loadedmetadata', () => {
-                    totalTimeElement.textContent = formatTime(audio.duration);
-                });
-
-                audio.addEventListener('timeupdate', () => {
-                    const currentTime = audio.currentTime;
-                    const duration = audio.duration;
-                    currentTimeElement.textContent = formatTime(currentTime);
-                    progress.style.width = (currentTime / duration) * 100 + '%';
-                });
-
-                playPauseButton.addEventListener('click', () => {
-                    if (audio.paused) {
-                        audio.play().catch(error => {
-                            console.error('Playback error:', error);
-                        });
-                        playPauseButton.textContent = 'Pause';
-                    } else {
-                        audio.pause();
-                        playPauseButton.textContent = 'Play';
-                    }
-                });
-
-                progressBar.addEventListener('mousemove', (e) => {
-                    const rect = progressBar.getBoundingClientRect();
-                    const offsetX = e.clientX - rect.left;
-                    const hoverTimeValue = (offsetX / progressBar.clientWidth) * audio.duration;
-                    hoverTime.textContent = formatTime(hoverTimeValue);
-                    hoverTime.style.left = offsetX + 'px';
-                    hoverTime.style.display = 'block';
-                });
-
-                progressBar.addEventListener('mouseout', () => {
-                    hoverTime.style.display = 'none';
-                });
-
-                progressBar.addEventListener('click', (e) => {
-                    const rect = progressBar.getBoundingClientRect();
-                    const offsetX = e.clientX - rect.left;
-                    const seekTime = (offsetX / progressBar.clientWidth) * audio.duration;
-                    audio.currentTime = seekTime;
-                });
-
-                document.querySelectorAll('.track').forEach(trackElement => {
-                    trackElement.addEventListener('click', () => {
-                        const index = parseInt(trackElement.getAttribute('data-index'), 10);
-                        playTrack(index);
-                    });
-                });
-
-                document.getElementById('back').addEventListener('click', () => {
-                    currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-                    playTrack(currentTrackIndex);
-                });
-
-                document.getElementById('skip').addEventListener('click', () => {
-                    currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
-                    playTrack(currentTrackIndex);
-                });
-
-            }).catch(err => {
-                console.error('Error loading resources:', err);
+            audio.addEventListener('loadedmetadata', () => {
+                totalTimeElement.textContent = formatTime(audio.duration);
+                document.getElementById(`track${currentTrackIndex + 1}-duration`).textContent = formatTime(audio.duration);
+                loadingElement.style.display = 'none';
             });
 
-            // Show loading text initially
-            playerContainer.style.display = 'none';
-            if (loadingElement) loadingElement.style.display = 'block';
+            audio.addEventListener('timeupdate', () => {
+                currentTimeElement.textContent = formatTime(audio.currentTime);
+                progress.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+            });
+
+            audio.addEventListener('ended', () => {
+                skipTrack(1); // Auto-play the next track
+            });
 
             function formatTime(seconds) {
                 const minutes = Math.floor(seconds / 60);
                 const secs = Math.floor(seconds % 60);
                 return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
             }
+
+            function playPause() {
+                if (audio.paused) {
+                    audio.play();
+                    playPauseButton.textContent = 'Pause';
+                } else {
+                    audio.pause();
+                    playPauseButton.textContent = 'Play';
+                }
+            }
+
+            playPauseButton.addEventListener('click', playPause);
+
+            document.getElementById('back').addEventListener('click', () => {
+                skipTrack(-1);
+            });
+
+            document.getElementById('skip').addEventListener('click', () => {
+                skipTrack(1);
+            });
+
+            function skipTrack(direction) {
+                let newIndex = currentTrackIndex + direction;
+                if (newIndex >= tracks.length) {
+                    newIndex = 0;
+                } else if (newIndex < 0) {
+                    newIndex = tracks.length - 1;
+                }
+                playTrack(newIndex);
+            }
+
+            progressBar.addEventListener('click', (e) => {
+                const rect = progressBar.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickTime = (clickX / rect.width) * audio.duration;
+                audio.currentTime = clickTime;
+            });
+
+            progressBar.addEventListener('mousemove', (e) => {
+                const rect = progressBar.getBoundingClientRect();
+                const hoverX = e.clientX - rect.left;
+                const hoverTimeSeconds = (hoverX / rect.width) * audio.duration;
+                hoverTime.textContent = formatTime(hoverTimeSeconds);
+                hoverTime.style.left = `${hoverX}px`;
+                hoverTime.style.display = 'block';
+            });
+
+            progressBar.addEventListener('mouseleave', () => {
+                hoverTime.style.display = 'none';
+            });
+
+            // Initial load
+            playTrack(0); // Start with the first track
         });
     </script>
 </body>
