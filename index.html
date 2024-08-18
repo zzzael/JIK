@@ -239,7 +239,7 @@
     <div class="loading" id="loading">Loading...</div>
 
     <script>
-        const audioElements = [];
+        const audio = new Audio();
         const playPauseButton = document.getElementById('play-pause-button');
         const progress = document.getElementById('progress');
         const progressBar = document.getElementById('progress-bar');
@@ -263,93 +263,57 @@
         let currentTrackIndex = 0;
         let isPlaying = false;
 
-        // Preload all tracks
-        tracks.forEach((track, index) => {
-            const audio = new Audio(track.src);
-            audio.preload = 'auto';
-            audio.addEventListener('canplaythrough', () => {
-                console.log(`Track ${index} is preloaded.`);
-                if (index === tracks.length - 1) {
-                    // All tracks are preloaded, show the player
-                    playerContainer.style.display = 'block';
-                    loadingMessage.style.display = 'none';
-                }
-            });
-            audio.addEventListener('error', (e) => {
-                console.error(`Error loading track ${index}:`, e);
-            });
-            audioElements.push(audio);
-        });
-
         const playTrack = async (index) => {
             if (index < 0 || index >= tracks.length) return;
 
             try {
-                // Show loading message
-                loadingMessage.style.display = 'block';
-                
-                // Stop current track if playing
-                if (audioElements[currentTrackIndex]) {
-                    audioElements[currentTrackIndex].pause();
-                    audioElements[currentTrackIndex].currentTime = 0;
+                // Abort previous request if exists
+                if (audio.src) {
+                    audio.pause();
+                    audio.src = "";
                 }
 
                 currentTrackIndex = index;
-                const currentAudio = audioElements[index];
-
-                // Update UI
+                audio.src = tracks[index].src;
                 currentTrackName.textContent = tracks[index].name;
                 currentTrackArtist.textContent = tracks[index].artist;
                 albumCover.src = 'LIST.png';
-                
-                // Play the new track
-                currentAudio.play().then(() => {
-                    // Hide loading message
-                    loadingMessage.style.display = 'none';
-                    
-                    isPlaying = true;
-                    playPauseButton.textContent = 'Pause';
-                }).catch((error) => {
-                    console.error('Playback error:', error);
-                    loadingMessage.style.display = 'none'; // Hide loading message on error
-                    playPauseButton.textContent = 'Play';
-                });
+                playerContainer.style.display = 'block'; // Show player container
+                playPauseButton.textContent = 'Pause';
+
+                // Load and play the new track
+                audio.load();
+                await audio.play();
+                isPlaying = true;
             } catch (error) {
                 console.error('Playback error:', error);
-                loadingMessage.style.display = 'none'; // Hide loading message on error
                 playPauseButton.textContent = 'Play';
             }
         };
 
-        const updateProgress = () => {
-            const currentAudio = audioElements[currentTrackIndex];
-            const { currentTime, duration } = currentAudio;
+        audio.addEventListener('timeupdate', () => {
+            const { currentTime, duration } = audio;
             const progressPercent = (currentTime / duration) * 100;
             progress.style.width = `${progressPercent}%`;
             currentTimeElement.textContent = formatTime(currentTime);
             totalTimeElement.textContent = formatTime(duration);
-        };
+        });
 
-        const handleEnded = () => {
+        audio.addEventListener('ended', () => {
             playTrack((currentTrackIndex + 1) % tracks.length);
-        };
-
-        audioElements.forEach(audio => {
-            audio.addEventListener('timeupdate', updateProgress);
-            audio.addEventListener('ended', handleEnded);
         });
 
         progressBar.addEventListener('click', (e) => {
             const barWidth = progressBar.clientWidth;
             const clickX = e.offsetX;
-            const duration = audioElements[currentTrackIndex].duration;
-            audioElements[currentTrackIndex].currentTime = (clickX / barWidth) * duration;
+            const duration = audio.duration;
+            audio.currentTime = (clickX / barWidth) * duration;
         });
 
         progressBar.addEventListener('mousemove', (e) => {
             const barWidth = progressBar.clientWidth;
             const hoverX = e.offsetX;
-            const duration = audioElements[currentTrackIndex].duration;
+            const duration = audio.duration;
             const hoverTimeValue = (hoverX / barWidth) * duration;
             hoverTime.textContent = formatTime(hoverTimeValue);
             hoverTime.style.left = `${hoverX}px`;
@@ -360,19 +324,20 @@
             hoverTime.style.display = 'none';
         });
 
-        playPauseButton.addEventListener('click', () => {
-            const currentAudio = audioElements[currentTrackIndex];
+        playPauseButton.addEventListener('click', async () => {
             if (isPlaying) {
-                currentAudio.pause();
+                audio.pause();
                 isPlaying = false;
                 playPauseButton.textContent = 'Play';
             } else {
-                currentAudio.play().catch(error => {
+                try {
+                    await audio.play();
+                    isPlaying = true;
+                    playPauseButton.textContent = 'Pause';
+                } catch (error) {
                     console.error('Playback error:', error);
                     playPauseButton.textContent = 'Play';
-                });
-                isPlaying = true;
-                playPauseButton.textContent = 'Pause';
+                }
             }
         });
 
@@ -390,10 +355,11 @@
             return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
         };
 
+        // Show player container and wait for user interaction to start playback
         window.onload = () => {
-            // Initialize with the first track
-            playTrack(0);
+            playerContainer.style.display = 'block';
         };
+
     </script>
 </body>
 </html>
