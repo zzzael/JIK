@@ -16,12 +16,42 @@
             margin: 0;
             font-family: 'Inter', Helvetica, sans-serif;
             color: #fff;
+            position: relative;
+        }
+
+        .ticker-container {
+            position: absolute;
+            top: 10px;
+            width: 100%;
+            overflow: hidden;
+            white-space: nowrap;
+            font-size: 14px;
+            font-family: Helvetica, sans-serif;
+            font-weight: bold;
+            color: #fff;
+            text-transform: uppercase;
+        }
+
+        .ticker-text {
+            display: inline-block;
+            padding-right: 100%;
+            animation: ticker 31s linear infinite;
+        }
+
+        @keyframes ticker {
+            0% {
+                transform: translateX(100%);
+            }
+            100% {
+                transform: translateX(-100%);
+            }
         }
 
         .player-container {
             text-align: center;
             max-width: 500px;
-            display: none; /* Initially hidden */
+            display: none;
+            margin-top: 50px;
         }
 
         .album-cover {
@@ -168,12 +198,16 @@
     </style>
 </head>
 <body>
+    <div class="ticker-container">
+        <div class="ticker-text" id="ticker-text"></div>
+    </div>
+
     <div class="player-container" id="player-container">
         <img src="LIST.png" alt="Album Cover" class="album-cover" id="album-cover">
 
         <div class="track-info">
-            <div class="track-name" id="current-track-name">JESUS IS LORD</div>
-            <div class="track-artist" id="current-track-artist">Ye, Sunday Service Choir</div>
+            <div class="track-name" id="current-track-name">NO TRACK LOADED</div>
+            <div class="track-artist" id="current-track-artist">PLEASE PICK A TRACK</div>
         </div>
 
         <div class="progress-bar" id="progress-bar">
@@ -199,7 +233,7 @@
                     <div class="track-name-list">1. JESUS IS LORD</div>
                     <div class="track-artist-list">Ye, Sunday Service Choir</div>
                 </div>
-                <div class="track-duration" id="track1-duration">0:00</div>
+                <div class="track-duration" id="track1-duration">1:27</div>
             </div>
             <div class="track" onclick="playTrack(1)" data-index="1">
                 <img src="LIST.png" alt="CLOSED ON SUNDAY">
@@ -207,7 +241,7 @@
                     <div class="track-name-list">2. CLOSED ON SUNDAY</div>
                     <div class="track-artist-list">Ye, Sunday Service Choir</div>
                 </div>
-                <div class="track-duration" id="track2-duration">0:00</div>
+                <div class="track-duration" id="track2-duration">2:31</div>
             </div>
             <div class="track" onclick="playTrack(2)" data-index="2">
                 <img src="LIST.png" alt="NEW AGAIN">
@@ -215,7 +249,7 @@
                     <div class="track-name-list">3. NEW AGAIN</div>
                     <div class="track-artist-list">Ye, Sunday Service Choir</div>
                 </div>
-                <div class="track-duration" id="track3-duration">0:00</div>
+                <div class="track-duration" id="track3-duration">3:03</div>
             </div>
             <div class="track" onclick="playTrack(3)" data-index="3">
                 <img src="LIST.png" alt="KEEP MY SPIRIT ALIVE">
@@ -223,7 +257,7 @@
                     <div class="track-name-list">4. KEEP MY SPIRIT ALIVE</div>
                     <div class="track-artist-list">Ye, Sunday Service Choir</div>
                 </div>
-                <div class="track-duration" id="track4-duration">0:00</div>
+                <div class="track-duration" id="track4-duration">2:50</div>
             </div>
             <div class="track" onclick="playTrack(4)" data-index="4">
                 <img src="LIST.png" alt="GOD IS">
@@ -231,135 +265,160 @@
                     <div class="track-name-list">5. GOD IS</div>
                     <div class="track-artist-list">Ye, Sunday Service Choir</div>
                 </div>
-                <div class="track-duration" id="track5-duration">0:00</div>
+                <div class="track-duration" id="track5-duration">3:23</div>
             </div>
         </div>
     </div>
 
-    <div class="loading" id="loading"></div>
+    <div class="loading" id="loading">Loading...</div>
 
     <script>
         const audio = new Audio();
         const playPauseButton = document.getElementById('play-pause-button');
         const progress = document.getElementById('progress');
         const progressBar = document.getElementById('progress-bar');
-        const hoverTime = document.getElementById('hover-time');
         const currentTimeElement = document.getElementById('current-time');
         const totalTimeElement = document.getElementById('total-time');
+        const albumCover = document.getElementById('album-cover');
         const currentTrackName = document.getElementById('current-track-name');
         const currentTrackArtist = document.getElementById('current-track-artist');
-        const albumCover = document.getElementById('album-cover');
+        const hoverTimeElement = document.getElementById('hover-time');
+        const loading = document.getElementById('loading');
         const playerContainer = document.getElementById('player-container');
-        const loadingMessage = document.getElementById('loading');
+        const tickerText = document.getElementById('ticker-text');
 
-        const tracks = [
-            { name: "JESUS IS LORD", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/JIK.mp3" },
-            { name: "CLOSED ON SUNDAY", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/OSND.mp3" },
-            { name: "NEW AGAIN", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/NEWAGAIN.mp3" },
-            { name: "KEEP MY SPIRIT ALIVE", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/KMSA.mp3" },
-            { name: "GOD IS", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/GodIs.mp3" }
+        // Bible verses for the ticker
+        const bibleVerses = [
+            "Isaiah 41:10 - Fear not, for I am with you; Be not dismayed, for I am your God. I will strengthen you, Yes, I will help you, I will uphold you with My righteous right hand.",
+            "Joshua 1:9 - Have I not commanded you? Be strong and of good courage; do not be afraid, nor be dismayed, for the Lord your God is with you wherever you go.",
+            "Psalm 2:6 - Yet I have set My King On My holy hill of Zion.",
+            "John 16:13 - However, when He, the Spirit of truth, has come, He will guide you into all truth; for He will not speak on His own authority, but whatever He hears He will speak; and He will tell you things to come.",
+            "John 17:17 - Sanctify them by Your truth. Your word is truth.",
+            "James 2:14-26 - What does it profit, my brethren, if someone says he has faith but does not have works? Can faith save him? If a brother or sister is naked and destitute of daily food, and one of you says to them, 'Depart in peace, be warmed and filled,' but you do not give them the things which are needed for the body, what does it profit? Thus also faith by itself, if it does not have works, is dead. But someone will say, 'You have faith, and I have works.' Show me your faith without your works, and I will show you my faith by my works. You believe that there is one God. You do well. Even the demons believe—and tremble! But do you want to know, O foolish man, that faith without works is dead? Was not Abraham our father justified by works when he offered Isaac his son on the altar? Do you see that faith was working together with his works, and by works faith was made perfect? And the Scripture was fulfilled which says, 'Abraham believed God, and it was accounted to him for righteousness.' And he was called the friend of God. You see then that a man is justified by works, and not by faith only. Likewise, was not Rahab the harlot also justified by works when she received the messengers and sent them out another way? For as the body without the spirit is dead, so faith without works is dead also."
+        ];
+
+        let tickerIndex = 0;
+        tickerText.innerText = bibleVerses[tickerIndex];
+
+        setInterval(() => {
+            tickerIndex = (tickerIndex + 1) % bibleVerses.length;
+            tickerText.innerText = bibleVerses[tickerIndex];
+        }, 20000);
+
+        // Song details
+        const tracklist = [
+            {
+                name: 'JESUS IS LORD',
+                artist: 'Ye, Sunday Service Choir',
+                url: 'JIK.mp3',
+                duration: '1:27'
+            },
+            {
+                name: 'CLOSED ON SUNDAY',
+                artist: 'Ye, Sunday Service Choir',
+                url: 'OSND.mp3',
+                duration: '2:31'
+            },
+            {
+                name: 'NEW AGAIN',
+                artist: 'Ye, Sunday Service Choir',
+                url: 'NEWAGAIN.mp3',
+                duration: '3:03'
+            },
+            {
+                name: 'KEEP MY SPIRIT ALIVE',
+                artist: 'Ye, Sunday Service Choir',
+                url: 'KMSA.mp3',
+                duration: '2:50'
+            },
+            {
+                name: 'GOD IS',
+                artist: 'Ye, Sunday Service Choir',
+                url: 'GodIs.mp3',
+                duration: '3:23'
+            }
         ];
 
         let currentTrackIndex = 0;
-        let isPlaying = false;
 
-        const playTrack = async (index) => {
-            if (index < 0 || index >= tracks.length) return;
-
-            try {
-                // Abort previous request if exists
-                if (audio.src) {
-                    audio.pause();
-                    audio.src = "";
-                }
-
-                currentTrackIndex = index;
-                audio.src = tracks[index].src;
-                currentTrackName.textContent = tracks[index].name;
-                currentTrackArtist.textContent = tracks[index].artist;
-                albumCover.src = 'LIST.png';
-                playerContainer.style.display = 'block'; // Show player container
-                playPauseButton.textContent = 'Pause';
-
-                // Load and play the new track
-                audio.load();
-                await audio.play();
-                isPlaying = true;
-            } catch (error) {
-                console.error('Playback error:', error);
-                playPauseButton.textContent = 'Play';
-            }
-        };
+        audio.addEventListener('loadedmetadata', () => {
+            totalTimeElement.innerText = formatTime(audio.duration);
+        });
 
         audio.addEventListener('timeupdate', () => {
-            const { currentTime, duration } = audio;
-            const progressPercent = (currentTime / duration) * 100;
-            progress.style.width = `${progressPercent}%`;
-            currentTimeElement.textContent = formatTime(currentTime);
-            totalTimeElement.textContent = formatTime(duration);
+            currentTimeElement.innerText = formatTime(audio.currentTime);
+            progress.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
         });
 
         audio.addEventListener('ended', () => {
-            playTrack((currentTrackIndex + 1) % tracks.length);
+            currentTrackIndex = (currentTrackIndex + 1) % tracklist.length;
+            playTrack(currentTrackIndex);
         });
 
-        progressBar.addEventListener('click', (e) => {
-            const barWidth = progressBar.clientWidth;
-            const clickX = e.offsetX;
-            const duration = audio.duration;
-            audio.currentTime = (clickX / barWidth) * duration;
-        });
-
-        progressBar.addEventListener('mousemove', (e) => {
-            const barWidth = progressBar.clientWidth;
-            const hoverX = e.offsetX;
-            const duration = audio.duration;
-            const hoverTimeValue = (hoverX / barWidth) * duration;
-            hoverTime.textContent = formatTime(hoverTimeValue);
-            hoverTime.style.left = `${hoverX}px`;
-            hoverTime.style.display = 'block';
-        });
-
-        progressBar.addEventListener('mouseout', () => {
-            hoverTime.style.display = 'none';
-        });
-
-        playPauseButton.addEventListener('click', async () => {
-            if (isPlaying) {
-                audio.pause();
-                isPlaying = false;
-                playPauseButton.textContent = 'Play';
+        playPauseButton.addEventListener('click', () => {
+            if (audio.paused) {
+                audio.play();
+                playPauseButton.innerText = 'Pause';
             } else {
-                try {
-                    await audio.play();
-                    isPlaying = true;
-                    playPauseButton.textContent = 'Pause';
-                } catch (error) {
-                    console.error('Playback error:', error);
-                    playPauseButton.textContent = 'Play';
-                }
+                audio.pause();
+                playPauseButton.innerText = 'Play';
             }
         });
 
+        progressBar.addEventListener('click', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const newTime = (clickX / rect.width) * audio.duration;
+            audio.currentTime = newTime;
+        });
+
+        progressBar.addEventListener('mousemove', (e) => {
+            const rect = progressBar.getBoundingClientRect();
+            const hoverX = e.clientX - rect.left;
+            const hoverTime = (hoverX / rect.width) * audio.duration;
+            hoverTimeElement.style.left = `${hoverX}px`;
+            hoverTimeElement.innerText = formatTime(hoverTime);
+            hoverTimeElement.style.display = 'block';
+        });
+
+        progressBar.addEventListener('mouseleave', () => {
+            hoverTimeElement.style.display = 'none';
+        });
+
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const secs = Math.floor(seconds % 60);
+            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
+        }
+
+        function playTrack(index) {
+            const track = tracklist[index];
+            currentTrackIndex = index;
+            audio.src = track.url;
+            albumCover.src = 'LIST.png';
+            currentTrackName.innerText = `${index + 1}. ${track.name}`;
+            currentTrackArtist.innerText = track.artist;
+            audio.play();
+            playPauseButton.innerText = 'Pause';
+            playerContainer.style.display = 'block';
+            loading.style.display = 'none';
+        }
+
         document.getElementById('back').addEventListener('click', () => {
-            playTrack((currentTrackIndex - 1 + tracks.length) % tracks.length);
+            currentTrackIndex = (currentTrackIndex - 1 + tracklist.length) % tracklist.length;
+            playTrack(currentTrackIndex);
         });
 
         document.getElementById('skip').addEventListener('click', () => {
-            playTrack((currentTrackIndex + 1) % tracks.length);
+            currentTrackIndex = (currentTrackIndex + 1) % tracklist.length;
+            playTrack(currentTrackIndex);
         });
 
-        const formatTime = (seconds) => {
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = Math.floor(seconds % 60);
-            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
+        window.onload = function() {
+            setTimeout(() => {
+                playTrack(currentTrackIndex);
+            }, 2000);
         };
-
-        // Show player container and wait for user interaction to start playback
-        window.onload = () => {
-            playerContainer.style.display = 'block';
-        };
-
     </script>
 </body>
 </html>
