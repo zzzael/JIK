@@ -257,133 +257,101 @@
             { name: "CLOSED ON SUNDAY", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/OSND.mp3" },
             { name: "NEW AGAIN", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/NEWAGAIN.mp3" },
             { name: "KEEP MY SPIRIT ALIVE", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/KMSA.mp3" },
-            { name: "GOD IS", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/GodIs.mp3" }
+            { name: "GOD IS", artist: "Ye, Sunday Service Choir", src: "https://zzzael.github.io/JIK/GodIs.mp3" },
         ];
 
         let currentTrackIndex = 0;
+        let isPlaying = false;
+        let trackDurations = [];
 
-        function preloadTracks(tracks, callback) {
+        window.onload = preloadTracks;
+
+        function preloadTracks() {
             let loadedCount = 0;
-
             tracks.forEach((track, index) => {
-                const xhr = new XMLHttpRequest();
-                xhr.open('GET', track.src, true);
-                xhr.responseType = 'blob';
-
-                xhr.onload = () => {
-                    if (xhr.status >= 200 && xhr.status < 300) {
-                        const audioBlob = xhr.response;
-                        const audioUrl = URL.createObjectURL(audioBlob);
-                        const audioElement = new Audio(audioUrl);
-
-                        audioElement.addEventListener('canplaythrough', () => {
-                            loadedCount++;
-                            document.getElementById(`track${index + 1}-duration`).textContent = formatTime(audioElement.duration);
-                            if (loadedCount === tracks.length) {
-                                callback();
-                            }
-                        });
-
-                        audioElement.addEventListener('error', (e) => {
-                            console.error(`Failed to load track ${track.src}: ${e.message}`);
-                            loadingMessage.textContent = `Failed to load track ${track.name}`;
-                        });
-                    } else {
-                        console.error(`Failed to fetch ${track.src}: ${xhr.statusText}`);
+                const trackAudio = new Audio(track.src);
+                trackAudio.onloadedmetadata = () => {
+                    trackDurations[index] = trackAudio.duration;
+                    document.getElementById(`track${index + 1}-duration`).textContent = formatTime(trackDurations[index]);
+                    loadedCount++;
+                    if (loadedCount === tracks.length) {
+                        playerContainer.style.display = 'block';
+                        loadingMessage.style.display = 'none';
                     }
                 };
-
-                xhr.onerror = () => {
-                    console.error(`Network error while fetching ${track.src}`);
-                };
-
-                xhr.send();
             });
         }
 
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const remainingSeconds = Math.floor(seconds % 60);
-            return `${minutes}:${remainingSeconds < 10 ? '0' : ''}${remainingSeconds}`;
-        }
+        playPauseButton.addEventListener('click', togglePlayPause);
+        audio.addEventListener('timeupdate', updateProgressBar);
+        audio.addEventListener('ended', playNextTrack);
 
-        function loadTrack(index) {
-            const track = tracks[index];
-            audio.src = track.src;
-            currentTrackName.textContent = track.name;
-            currentTrackArtist.textContent = track.artist;
-            albumCover.src = "LIST.png";
-
-            audio.onloadedmetadata = () => {
-                totalTimeElement.textContent = formatTime(audio.duration);
-            };
-
-            audio.onerror = () => {
-                console.error(`Error loading track ${track.src}`);
-                loadingMessage.textContent = `Error loading track ${track.name}`;
-            };
+        function togglePlayPause() {
+            if (isPlaying) {
+                pauseTrack();
+            } else {
+                playTrack(currentTrackIndex);
+            }
         }
 
         function playTrack(index) {
-            currentTrackIndex = index;
-            loadTrack(index);
+            if (index !== currentTrackIndex) {
+                currentTrackIndex = index;
+                audio.src = tracks[index].src;
+                currentTrackName.textContent = tracks[index].name;
+                currentTrackArtist.textContent = tracks[index].artist;
+            }
             audio.play();
-            playPauseButton.textContent = "Pause";
+            isPlaying = true;
+            playPauseButton.textContent = 'Pause';
+            totalTimeElement.textContent = formatTime(trackDurations[index]);
         }
 
-        playPauseButton.addEventListener('click', () => {
-            if (audio.paused) {
-                audio.play();
-                playPauseButton.textContent = "Pause";
-            } else {
-                audio.pause();
-                playPauseButton.textContent = "Play";
-            }
-        });
+        function pauseTrack() {
+            audio.pause();
+            isPlaying = false;
+            playPauseButton.textContent = 'Play';
+        }
 
-        audio.ontimeupdate = () => {
-            const progressPercent = (audio.currentTime / audio.duration) * 100;
-            progress.style.width = `${progressPercent}%`;
-            currentTimeElement.textContent = formatTime(audio.currentTime);
-        };
+        function updateProgressBar() {
+            const { currentTime, duration } = audio;
+            progress.style.width = `${(currentTime / duration) * 100}%`;
+            currentTimeElement.textContent = formatTime(currentTime);
+        }
+
+        function playNextTrack() {
+            if (currentTrackIndex < tracks.length - 1) {
+                playTrack(currentTrackIndex + 1);
+            } else {
+                playTrack(0);
+            }
+        }
 
         progressBar.addEventListener('mousemove', (e) => {
-            const boundingRect = progressBar.getBoundingClientRect();
-            const offsetX = e.clientX - boundingRect.left;
-            const progressPercent = offsetX / boundingRect.width;
-            const hoverTimeValue = audio.duration * progressPercent;
-            hoverTime.style.display = "block";
+            const rect = progressBar.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const hoverTimeSeconds = (offsetX / progressBar.offsetWidth) * audio.duration;
             hoverTime.style.left = `${offsetX}px`;
-            hoverTime.textContent = formatTime(hoverTimeValue);
+            hoverTime.textContent = formatTime(hoverTimeSeconds);
+            hoverTime.style.display = 'block';
         });
 
-        progressBar.addEventListener('mouseleave', () => {
-            hoverTime.style.display = "none";
+        progressBar.addEventListener('mouseout', () => {
+            hoverTime.style.display = 'none';
         });
 
         progressBar.addEventListener('click', (e) => {
-            const boundingRect = progressBar.getBoundingClientRect();
-            const offsetX = e.clientX - boundingRect.left;
-            const progressPercent = offsetX / boundingRect.width;
-            audio.currentTime = audio.duration * progressPercent;
+            const rect = progressBar.getBoundingClientRect();
+            const offsetX = e.clientX - rect.left;
+            const seekTime = (offsetX / progressBar.offsetWidth) * audio.duration;
+            audio.currentTime = seekTime;
         });
 
-        document.getElementById('back').addEventListener('click', () => {
-            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
-            playTrack(currentTrackIndex);
-        });
-
-        document.getElementById('skip').addEventListener('click', () => {
-            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
-            playTrack(currentTrackIndex);
-        });
-
-        // Preload all tracks and display the player once done
-        preloadTracks(tracks, () => {
-            loadingMessage.style.display = "none";
-            playerContainer.style.display = "block";
-            loadTrack(0);
-        });
+        function formatTime(seconds) {
+            const minutes = Math.floor(seconds / 60);
+            const remainderSeconds = Math.floor(seconds % 60);
+            return `${minutes}:${remainderSeconds < 10 ? '0' : ''}${remainderSeconds}`;
+        }
     </script>
 </body>
 </html>
