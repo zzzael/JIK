@@ -195,6 +195,22 @@
             font-size: 18px;
             font-weight: 700;
         }
+
+        .download-container {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+        }
+
+        .download-button {
+            font-size: 14px;
+            font-weight: 700;
+            color: #fff;
+            background: none;
+            border: none;
+            cursor: pointer;
+            text-transform: uppercase;
+        }
     </style>
 </head>
 <body>
@@ -203,7 +219,7 @@
     </div>
 
     <div class="player-container" id="player-container">
-        <img src="LIST.png" alt="Album Cover" class="album-cover" id="album-cover">
+        <img src="JEEK.png" alt="Album Cover" class="album-cover" id="album-cover">
 
         <div class="track-info">
             <div class="track-name" id="current-track-name">NO TRACK LOADED</div>
@@ -226,164 +242,119 @@
             <span id="skip">Skip</span>
         </div>
 
-        <div class="tracklist-container">
-            <div class="track" onclick="playTrack(0)" data-index="0">
-                <img src="LIST.png" alt="JESUS IS LORD">
-                <div class="track-details">
-                    <div class="track-name-list">1. JESUS IS LORD</div>
-                    <div class="track-artist-list">Ye, Sunday Service Choir</div>
-                </div>
-                <div class="track-duration" id="track1-duration">1:27</div>
-            </div>
-            <div class="track" onclick="playTrack(1)" data-index="1">
-                <img src="LIST.png" alt="CLOSED ON SUNDAY">
-                <div class="track-details">
-                    <div class="track-name-list">2. CLOSED ON SUNDAY</div>
-                    <div class="track-artist-list">Ye, Sunday Service Choir</div>
-                </div>
-                <div class="track-duration" id="track2-duration">2:31</div>
-            </div>
-            <div class="track" onclick="playTrack(2)" data-index="2">
-                <img src="LIST.png" alt="NEW AGAIN">
-                <div class="track-details">
-                    <div class="track-name-list">3. NEW AGAIN</div>
-                    <div class="track-artist-list">Ye, Sunday Service Choir</div>
-                </div>
-                <div class="track-duration" id="track3-duration">3:03</div>
-            </div>
-            <div class="track" onclick="playTrack(3)" data-index="3">
-                <img src="LIST.png" alt="KEEP MY SPIRIT ALIVE">
-                <div class="track-details">
-                    <div class="track-name-list">4. KEEP MY SPIRIT ALIVE</div>
-                    <div class="track-artist-list">Ye, Sunday Service Choir</div>
-                </div>
-                <div class="track-duration" id="track4-duration">2:50</div>
-            </div>
-            <div class="track" onclick="playTrack(4)" data-index="4">
-                <img src="LIST.png" alt="GOD IS">
-                <div class="track-details">
-                    <div class="track-name-list">5. GOD IS</div>
-                    <div class="track-artist-list">Ye, Sunday Service Choir</div>
-                </div>
-                <div class="track-duration" id="track5-duration">3:23</div>
-            </div>
+        <div class="tracklist-container" id="tracklist-container">
+            <!-- Tracks will be inserted here by JavaScript -->
         </div>
     </div>
 
     <div class="loading" id="loading">Loading...</div>
 
+    <div class="download-container">
+        <button class="download-button" id="download-button">[ DOWNLOAD ]</button>
+    </div>
+
     <script>
-        const audio = new Audio();
-        const playPauseButton = document.getElementById('play-pause-button');
-        const progress = document.getElementById('progress');
-        const progressBar = document.getElementById('progress-bar');
-        const currentTimeElement = document.getElementById('current-time');
-        const totalTimeElement = document.getElementById('total-time');
-        const albumCover = document.getElementById('album-cover');
+        const tracklist = [
+            { name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir', url: 'JIL.mp3', duration: '1:27' },
+            { name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir', url: 'OSND.mp3', duration: '2:31' },
+            { name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir', url: 'NEWAGAIN.mp3', duration: '3:03' },
+            { name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir', url: 'KMSA.mp3', duration: '2:50' },
+            { name: 'GOD IS', artist: 'Ye, Sunday Service Choir', url: 'GodIs.mp3', duration: '3:23' },
+            { name: 'NEW BODY', artist: 'Ye, Sunday Service Choir', url: 'NEWBODY.mp3', duration: '3:23' },
+            { name: '24', artist: 'Ye, Sunday Service Choir', url: '24.mp3', duration: '3:23' },
+            { name: 'GODS TIMING', artist: 'Ye, Sunday Service Choir', url: 'TMIN.mp3', duration: '3:23' },
+            { name: 'PURE SOULS', artist: 'Ye, Sunday Service Choir', url: 'PSOUL.mp3', duration: '3:23' }
+        ];
+
+        const tracklistContainer = document.getElementById('tracklist-container');
+
+        tracklist.forEach((track, index) => {
+            const trackElement = document.createElement('div');
+            trackElement.className = 'track';
+            trackElement.dataset.index = index;
+
+            trackElement.innerHTML = `
+                <img src="JEEK.png" alt="${track.name}">
+                <div class="track-details">
+                    <div class="track-name-list">${index + 1}. ${track.name}</div>
+                    <div class="track-artist-list">${track.artist}</div>
+                </div>
+                <div class="track-duration">${track.duration}</div>
+            `;
+
+            trackElement.onclick = () => playTrack(index);
+
+            tracklistContainer.appendChild(trackElement);
+        });
+
+        const playerContainer = document.getElementById('player-container');
         const currentTrackName = document.getElementById('current-track-name');
         const currentTrackArtist = document.getElementById('current-track-artist');
-        const hoverTimeElement = document.getElementById('hover-time');
-        const loading = document.getElementById('loading');
-        const playerContainer = document.getElementById('player-container');
-        const tickerText = document.getElementById('ticker-text');
+        const progressBar = document.getElementById('progress-bar');
+        const progress = document.getElementById('progress');
+        const currentTimeDisplay = document.getElementById('current-time');
+        const totalTimeDisplay = document.getElementById('total-time');
+        const playPauseButton = document.getElementById('play-pause-button');
+        const loadingElement = document.getElementById('loading');
+        const downloadButton = document.getElementById('download-button');
 
-        // Bible verses for the ticker
-        const bibleVerses = [
-            "Isaiah 41:10 - Fear not, for I am with you; Be not dismayed, for I am your God. I will strengthen you, Yes, I will help you.",
-            "Joshua 1:9 - Have I not commanded you? Be strong and of good courage; do not be afraid, nor be dismayed, for the Lord your God is with you wherever you go.",
-            "Psalm 2:6 - Yet I have set My King On My holy hill of Zion.",
-            "John 16:13 - However, when He, the Spirit of truth, has come, He will guide you into all truth",
-            "John 17:17 - Sanctify them by Your truth. Your word is truth.",
-            "James 2:14-26 - What does it profit, my brethren, if someone says he has faith but does not have works? Can faith save him?"
-        ];
+        let audio = new Audio();
+        let isPlaying = false;
+        let currentTrackIndex = null;
 
-        let tickerIndex = 0;
-        tickerText.innerText = bibleVerses[tickerIndex];
-
-        setInterval(() => {
-            tickerIndex = (tickerIndex + 1) % bibleVerses.length;
-            tickerText.innerText = bibleVerses[tickerIndex];
-        }, 20000);
-
-        // Song details
-        const tracklist = [
-            {
-                name: 'JESUS IS LORD',
-                artist: 'Ye, Sunday Service Choir',
-                url: 'JIK.mp3',
-                duration: '1:27'
-            },
-            {
-                name: 'CLOSED ON SUNDAY',
-                artist: 'Ye, Sunday Service Choir',
-                url: 'OSND.mp3',
-                duration: '2:31'
-            },
-            {
-                name: 'NEW AGAIN',
-                artist: 'Ye, Sunday Service Choir',
-                url: 'NEWAGAIN.mp3',
-                duration: '3:03'
-            },
-            {
-                name: 'KEEP MY SPIRIT ALIVE',
-                artist: 'Ye, Sunday Service Choir',
-                url: 'KMSA.mp3',
-                duration: '2:50'
-            },
-            {
-                name: 'GOD IS',
-                artist: 'Ye, Sunday Service Choir',
-                url: 'GodIs.mp3',
-                duration: '3:23'
+        function playTrack(index) {
+            if (currentTrackIndex === index && isPlaying) {
+                pauseTrack();
+                return;
             }
-        ];
 
-        let currentTrackIndex = 0;
-
-        audio.addEventListener('loadedmetadata', () => {
-            totalTimeElement.innerText = formatTime(audio.duration);
-        });
-
-        audio.addEventListener('timeupdate', () => {
-            currentTimeElement.innerText = formatTime(audio.currentTime);
-            progress.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
-        });
-
-        audio.addEventListener('ended', () => {
-            currentTrackIndex = (currentTrackIndex + 1) % tracklist.length;
-            playTrack(currentTrackIndex);
-        });
-
-        playPauseButton.addEventListener('click', () => {
-            if (audio.paused) {
-                audio.play();
-                playPauseButton.innerText = 'Pause';
-            } else {
+            if (currentTrackIndex !== null) {
                 audio.pause();
-                playPauseButton.innerText = 'Play';
             }
-        });
 
-        progressBar.addEventListener('click', (e) => {
-            const rect = progressBar.getBoundingClientRect();
-            const clickX = e.clientX - rect.left;
-            const newTime = (clickX / rect.width) * audio.duration;
-            audio.currentTime = newTime;
-        });
+            currentTrackIndex = index;
+            const track = tracklist[index];
+            audio.src = track.url;
+            currentTrackName.textContent = track.name;
+            currentTrackArtist.textContent = track.artist;
 
-        progressBar.addEventListener('mousemove', (e) => {
-            const rect = progressBar.getBoundingClientRect();
-            const hoverX = e.clientX - rect.left;
-            const hoverTime = (hoverX / rect.width) * audio.duration;
-            hoverTimeElement.style.left = `${hoverX}px`;
-            hoverTimeElement.innerText = formatTime(hoverTime);
-            hoverTimeElement.style.display = 'block';
-        });
+            audio.addEventListener('loadeddata', () => {
+                totalTimeDisplay.textContent = formatTime(audio.duration);
+                playerContainer.style.display = 'block';
+                loadingElement.style.display = 'none';
+                playPauseButton.textContent = 'Play';
+                audio.play().catch(error => {
+                    console.error('Error playing track:', error);
+                    // Handle additional error UI updates or messages here
+                });
+                isPlaying = true;
+            });
 
-        progressBar.addEventListener('mouseleave', () => {
-            hoverTimeElement.style.display = 'none';
-        });
+            audio.addEventListener('timeupdate', () => {
+                progress.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
+                currentTimeDisplay.textContent = formatTime(audio.currentTime);
+            });
+
+            audio.addEventListener('ended', () => {
+                isPlaying = false;
+                playPauseButton.textContent = 'Play';
+            });
+
+            audio.addEventListener('error', (error) => {
+                console.error('Error loading track:', error);
+                alert('Error loading the track. Please try again.');
+                loadingElement.style.display = 'none';
+                playerContainer.style.display = 'none';
+            });
+
+            loadingElement.style.display = 'block';
+        }
+
+        function pauseTrack() {
+            audio.pause();
+            isPlaying = false;
+            playPauseButton.textContent = 'Play';
+        }
 
         function formatTime(seconds) {
             const minutes = Math.floor(seconds / 60);
@@ -391,34 +362,55 @@
             return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
         }
 
-        function playTrack(index) {
-            const track = tracklist[index];
-            currentTrackIndex = index;
-            audio.src = track.url;
-            albumCover.src = 'LIST.png';
-            currentTrackName.innerText = `${index + 1}. ${track.name}`;
-            currentTrackArtist.innerText = track.artist;
-            audio.play();
-            playPauseButton.innerText = 'Pause';
-            playerContainer.style.display = 'block';
-            loading.style.display = 'none';
-        }
+        playPauseButton.addEventListener('click', () => {
+            if (isPlaying) {
+                pauseTrack();
+            } else {
+                audio.play().catch(error => console.error('Play error:', error));
+                isPlaying = true;
+                playPauseButton.textContent = 'Pause';
+            }
+        });
 
         document.getElementById('back').addEventListener('click', () => {
-            currentTrackIndex = (currentTrackIndex - 1 + tracklist.length) % tracklist.length;
-            playTrack(currentTrackIndex);
+            if (currentTrackIndex > 0) {
+                playTrack(currentTrackIndex - 1);
+            }
         });
 
         document.getElementById('skip').addEventListener('click', () => {
-            currentTrackIndex = (currentTrackIndex + 1) % tracklist.length;
-            playTrack(currentTrackIndex);
+            if (currentTrackIndex < tracklist.length - 1) {
+                playTrack(currentTrackIndex + 1);
+            }
         });
 
-        window.onload = function() {
-            setTimeout(() => {
-                playTrack(currentTrackIndex);
-            }, 2000);
-        };
+        progressBar.addEventListener('click', (event) => {
+            const rect = progressBar.getBoundingClientRect();
+            const clickX = event.clientX - rect.left;
+            const progressWidth = rect.width;
+            audio.currentTime = (clickX / progressWidth) * audio.duration;
+        });
+
+        progressBar.addEventListener('mousemove', (event) => {
+            const rect = progressBar.getBoundingClientRect();
+            const hoverX = event.clientX - rect.left;
+            const hoverTime = document.getElementById('hover-time');
+            const time = (hoverX / rect.width) * audio.duration;
+            hoverTime.textContent = formatTime(time);
+            hoverTime.style.left = `${hoverX}px`;
+            hoverTime.style.display = 'block';
+        });
+
+        progressBar.addEventListener('mouseleave', () => {
+            document.getElementById('hover-time').style.display = 'none';
+        });
+
+        downloadButton.addEventListener('click', () => {
+            if (currentTrackIndex !== null) {
+                const track = tracklist[currentTrackIndex];
+                window.location.href = track.url;
+            }
+        });
     </script>
 </body>
 </html>
