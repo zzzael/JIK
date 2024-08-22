@@ -3,414 +3,92 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Music Player</title>
+    <title>Loading...</title>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&display=swap');
-
         body {
+            background-color: #ffffff;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
-            background-color: #121212;
             margin: 0;
-            font-family: 'Inter', Helvetica, sans-serif;
-            color: #fff;
+            font-family: 'Helvetica', sans-serif;
             position: relative;
         }
 
-        .ticker-container {
+        .video-container {
+            text-align: center;
+        }
+
+        video {
+            width: 300px; /* Current video size */
+            height: 300px;
+            display: block;
+            margin: 0 auto;
+        }
+
+        .title {
+            text-transform: uppercase;
+            font-weight: 500;
+            font-size: 14px; /* Current text size */
+            margin-top: 5px;
+            text-align: center; /* Centered text */
+        }
+
+        .countdown {
             position: absolute;
             top: 10px;
-            width: 100%;
-            overflow: hidden;
-            white-space: nowrap;
-            font-size: 14px;
-            font-family: Helvetica, sans-serif;
-            font-weight: bold;
-            color: #fff;
-            text-transform: uppercase;
-        }
-
-        .ticker-text {
-            display: inline-block;
-            padding-right: 100%;
-            animation: ticker 31s linear infinite;
-        }
-
-        @keyframes ticker {
-            0% {
-                transform: translateX(100%);
-            }
-            100% {
-                transform: translateX(-100%);
-            }
-        }
-
-        .player-container {
-            text-align: center;
-            max-width: 500px;
-            display: none;
-            margin-top: 50px;
-        }
-
-        .album-cover {
-            width: 300px;
-            height: 300px;
-            max-width: 100%;
-            border-radius: 5px;
-            box-shadow: 0 4px 20px rgba(255, 255, 255, 0.2);
-            margin-bottom: 10px;
-            transition: opacity 0.5s;
-        }
-
-        .track-info {
-            margin-bottom: 20px;
-        }
-
-        .track-name {
-            font-size: 18px;
-            font-weight: 700;
-            margin-bottom: 5px;
-        }
-
-        .track-artist {
-            font-size: 14px;
-            font-weight: 500;
-            color: #aaa;
-        }
-
-        .progress-bar {
-            width: 300px;
-            height: 8px;
-            background-color: #333;
-            border-radius: 5px;
-            overflow: hidden;
-            margin: 20px 0;
-            position: relative;
-            cursor: pointer;
-        }
-
-        .progress {
-            height: 100%;
-            background-color: #fff;
-            width: 0;
-            border-radius: 5px;
-            transition: width 0.1s linear;
-        }
-
-        .hover-time {
-            position: absolute;
-            top: -30px;
-            background-color: #000;
-            color: #fff;
-            padding: 2px 5px;
-            border-radius: 3px;
-            font-size: 12px;
-            white-space: nowrap;
-            transform: translateX(-50%);
-            display: none;
-        }
-
-        .time-stamps {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-            margin-bottom: 20px;
-        }
-
-        .controls {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            font-size: 14px;
-            font-weight: 700;
-            margin-bottom: 20px;
-        }
-
-        .controls span {
-            cursor: pointer;
-            text-transform: uppercase;
-        }
-
-        .tracklist-container {
-            height: 200px;
-            overflow-y: auto;
-            background-color: #1e1e1e;
-            padding: 10px;
-            border-radius: 8px;
-        }
-
-        .track {
-            display: flex;
-            align-items: center;
-            padding: 10px 0;
-            border-bottom: 1px solid #333;
-            cursor: pointer;
-            transition: background-color 0.2s ease;
-        }
-
-        .track:last-child {
-            border-bottom: none;
-        }
-
-        .track:hover {
-            background-color: #333;
-        }
-
-        .track img {
-            width: 50px;
-            height: 50px;
-            border-radius: 5px;
-            margin-right: 15px;
-            box-shadow: 0 2px 10px rgba(255, 255, 255, 0.1);
-        }
-
-        .track-details {
-            flex: 1;
-            overflow: hidden;
-        }
-
-        .track-name-list {
-            font-size: 14px;
-            font-weight: 700;
-        }
-
-        .track-artist-list {
-            font-size: 12px;
-            color: #aaa;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-
-        .track-duration {
-            font-size: 12px;
-            font-weight: 700;
-            margin-left: 10px;
-        }
-
-        .loading {
-            color: #fff;
-            font-size: 18px;
-            font-weight: 700;
-        }
-
-        .download-container {
-            position: absolute;
-            bottom: 10px;
             left: 10px;
+            font-size: 14px;
         }
 
-        .download-button {
-            font-size: 14px;
-            font-weight: 700;
-            color: #fff;
-            background: none;
-            border: none;
-            cursor: pointer;
-            text-transform: uppercase;
+        /* Hide body initially until the video is loaded */
+        body.hidden {
+            visibility: hidden;
         }
     </style>
 </head>
-<body>
-    <div class="ticker-container">
-        <div class="ticker-text" id="ticker-text"></div>
-    </div>
+<body class="hidden">
+    <div class="countdown" id="countdown">Loading...</div>
 
-    <div class="player-container" id="player-container">
-        <img src="JEEK.png" alt="Album Cover" class="album-cover" id="album-cover">
-
-        <div class="track-info">
-            <div class="track-name" id="current-track-name">NO TRACK LOADED</div>
-            <div class="track-artist" id="current-track-artist">PLEASE PICK A TRACK</div>
-        </div>
-
-        <div class="progress-bar" id="progress-bar">
-            <div class="progress" id="progress"></div>
-            <div class="hover-time" id="hover-time"></div>
-        </div>
-
-        <div class="time-stamps">
-            <span id="current-time">0:00</span>
-            <span id="total-time">0:00</span>
-        </div>
-
-        <div class="controls">
-            <span id="back">Back</span>
-            <span id="play-pause-button">Play</span>
-            <span id="skip">Skip</span>
-        </div>
-
-        <div class="tracklist-container" id="tracklist-container">
-            <!-- Tracks will be inserted here by JavaScript -->
-        </div>
-    </div>
-
-    <div class="loading" id="loading">Loading...</div>
-
-    <div class="download-container">
-        <button class="download-button" id="download-button">[ DOWNLOAD ]</button>
+    <div class="video-container">
+        <video id="video" src="puresouls.mp4" controls autoplay muted loop></video>
+        <div class="title">Pure Souls - Single</div>
     </div>
 
     <script>
-        const tracklist = [
-            { name: 'JESUS IS LORD', artist: 'Ye, Sunday Service Choir', url: 'JIL.mp3', duration: '1:27' },
-            { name: 'CLOSED ON SUNDAY', artist: 'Ye, Sunday Service Choir', url: 'OSND.mp3', duration: '2:31' },
-            { name: 'NEW AGAIN', artist: 'Ye, Sunday Service Choir', url: 'NEWAGAIN.mp3', duration: '3:03' },
-            { name: 'KEEP MY SPIRIT ALIVE', artist: 'Ye, Sunday Service Choir', url: 'KMSA.mp3', duration: '2:50' },
-            { name: 'GOD IS', artist: 'Ye, Sunday Service Choir', url: 'GodIs.mp3', duration: '3:23' },
-            { name: 'NEW BODY', artist: 'Ye, Sunday Service Choir', url: 'NEWBODY.mp3', duration: '3:23' },
-            { name: '24', artist: 'Ye, Sunday Service Choir', url: '24.mp3', duration: '3:23' },
-            { name: 'GODS TIMING', artist: 'Ye, Sunday Service Choir', url: 'TMIN.mp3', duration: '3:23' },
-            { name: 'PURE SOULS', artist: 'Ye, Sunday Service Choir', url: 'PSOUL.mp3', duration: '3:23' }
-        ];
-
-        const tracklistContainer = document.getElementById('tracklist-container');
-
-        tracklist.forEach((track, index) => {
-            const trackElement = document.createElement('div');
-            trackElement.className = 'track';
-            trackElement.dataset.index = index;
-
-            trackElement.innerHTML = `
-                <img src="JEEK.png" alt="${track.name}">
-                <div class="track-details">
-                    <div class="track-name-list">${index + 1}. ${track.name}</div>
-                    <div class="track-artist-list">${track.artist}</div>
-                </div>
-                <div class="track-duration">${track.duration}</div>
-            `;
-
-            trackElement.onclick = () => playTrack(index);
-
-            tracklistContainer.appendChild(trackElement);
+        // Wait for the video to load before showing the page
+        const videoElement = document.getElementById('video');
+        videoElement.addEventListener('canplaythrough', function() {
+            document.body.classList.remove('hidden');
         });
 
-        const playerContainer = document.getElementById('player-container');
-        const currentTrackName = document.getElementById('current-track-name');
-        const currentTrackArtist = document.getElementById('current-track-artist');
-        const progressBar = document.getElementById('progress-bar');
-        const progress = document.getElementById('progress');
-        const currentTimeDisplay = document.getElementById('current-time');
-        const totalTimeDisplay = document.getElementById('total-time');
-        const playPauseButton = document.getElementById('play-pause-button');
-        const loadingElement = document.getElementById('loading');
-        const downloadButton = document.getElementById('download-button');
+        function updateCountdown() {
+            const targetDate = new Date();
+            targetDate.setHours(0, 0, 0, 0);
+            targetDate.setDate(targetDate.getDate() + (6 - targetDate.getDay()) % 7);  // Saturday
 
-        let audio = new Audio();
-        let isPlaying = false;
-        let currentTrackIndex = null;
+            const now = new Date();
+            const timeDifference = targetDate - now;
 
-        function playTrack(index) {
-            if (currentTrackIndex === index && isPlaying) {
-                pauseTrack();
+            if (timeDifference <= 0) {
+                document.getElementById('countdown').innerText = '00:00:00:00';
                 return;
             }
 
-            if (currentTrackIndex !== null) {
-                audio.pause();
-            }
+            const hours = Math.floor((timeDifference / (1000 * 60 * 60)) % 24);
+            const minutes = Math.floor((timeDifference / (1000 * 60)) % 60);
+            const seconds = Math.floor((timeDifference / 1000) % 60);
+            const milliseconds = Math.floor((timeDifference % 1000) / 16.67);  // 60 steps per second
 
-            currentTrackIndex = index;
-            const track = tracklist[index];
-            audio.src = track.url;
-            currentTrackName.textContent = track.name;
-            currentTrackArtist.textContent = track.artist;
-
-            audio.addEventListener('loadeddata', () => {
-                totalTimeDisplay.textContent = formatTime(audio.duration);
-                playerContainer.style.display = 'block';
-                loadingElement.style.display = 'none';
-                playPauseButton.textContent = 'Play';
-                audio.play().catch(error => {
-                    console.error('Error playing track:', error);
-                    // Handle additional error UI updates or messages here
-                });
-                isPlaying = true;
-            });
-
-            audio.addEventListener('timeupdate', () => {
-                progress.style.width = `${(audio.currentTime / audio.duration) * 100}%`;
-                currentTimeDisplay.textContent = formatTime(audio.currentTime);
-            });
-
-            audio.addEventListener('ended', () => {
-                isPlaying = false;
-                playPauseButton.textContent = 'Play';
-            });
-
-            audio.addEventListener('error', (error) => {
-                console.error('Error loading track:', error);
-                alert('Error loading the track. Please try again.');
-                loadingElement.style.display = 'none';
-                playerContainer.style.display = 'none';
-            });
-
-            loadingElement.style.display = 'block';
+            document.getElementById('countdown').innerText =
+                `${hours.toString().padStart(2, '0')}:` +
+                `${minutes.toString().padStart(2, '0')}:` +
+                `${seconds.toString().padStart(2, '0')}:` +
+                `${milliseconds.toString().padStart(2, '0')}`;
         }
 
-        function pauseTrack() {
-            audio.pause();
-            isPlaying = false;
-            playPauseButton.textContent = 'Play';
-        }
-
-        function formatTime(seconds) {
-            const minutes = Math.floor(seconds / 60);
-            const secs = Math.floor(seconds % 60);
-            return `${minutes}:${secs < 10 ? '0' : ''}${secs}`;
-        }
-
-        playPauseButton.addEventListener('click', () => {
-            if (isPlaying) {
-                pauseTrack();
-            } else {
-                audio.play().catch(error => console.error('Play error:', error));
-                isPlaying = true;
-                playPauseButton.textContent = 'Pause';
-            }
-        });
-
-        document.getElementById('back').addEventListener('click', () => {
-            if (currentTrackIndex > 0) {
-                playTrack(currentTrackIndex - 1);
-            }
-        });
-
-        document.getElementById('skip').addEventListener('click', () => {
-            if (currentTrackIndex < tracklist.length - 1) {
-                playTrack(currentTrackIndex + 1);
-            }
-        });
-
-        progressBar.addEventListener('click', (event) => {
-            const rect = progressBar.getBoundingClientRect();
-            const clickX = event.clientX - rect.left;
-            const progressWidth = rect.width;
-            audio.currentTime = (clickX / progressWidth) * audio.duration;
-        });
-
-        progressBar.addEventListener('mousemove', (event) => {
-            const rect = progressBar.getBoundingClientRect();
-            const hoverX = event.clientX - rect.left;
-            const hoverTime = document.getElementById('hover-time');
-            const time = (hoverX / rect.width) * audio.duration;
-            hoverTime.textContent = formatTime(time);
-            hoverTime.style.left = `${hoverX}px`;
-            hoverTime.style.display = 'block';
-        });
-
-        progressBar.addEventListener('mouseleave', () => {
-            document.getElementById('hover-time').style.display = 'none';
-        });
-
-        downloadButton.addEventListener('click', () => {
-            if (currentTrackIndex !== null) {
-                const track = tracklist[currentTrackIndex];
-                window.location.href = track.url;
-            }
-        });
+        setInterval(updateCountdown, 16.67);  // Updates every 16.67 ms (~60 times per second)
     </script>
 </body>
 </html>
